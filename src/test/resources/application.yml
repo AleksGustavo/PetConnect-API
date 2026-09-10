@@ -1,0 +1,22 @@
+# Config de teste — MongoDB embarcado (flapdoodle), sem depender de instância externa.
+# NÃO definir spring.data.mongodb.uri aqui: o flapdoodle escolhe host/porta livres
+# e conecta o client. Definir apenas o nome do banco.
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 7.0.14
+
+spring:
+  data:
+    mongodb:
+      database: petconnect_test
+      auto-index-creation: true
+
+petconnect:
+  cors:
+    allowed-origins:
+      - http://localhost
+  firebase:
+    service-account: ""
+    project-id: pet-connect-c53f1

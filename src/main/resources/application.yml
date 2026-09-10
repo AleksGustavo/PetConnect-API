@@ -1,0 +1,52 @@
+# Configuração base — comum a todos os ambientes.
+# Cada ambiente sobrescreve o necessário em application-{dev,staging,prod}.yml
+# e valores sensíveis vêm SEMPRE de variáveis de ambiente (nunca commitados).
+
+spring:
+  application:
+    name: petconnect-api
+  profiles:
+    active: ${APP_ENV:dev}
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/petconnect}
+      auto-index-creation: true
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+petconnect:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost}
+  firebase:
+    # Caminho para o JSON da conta de serviço OU o próprio JSON em base64.
+    # Vazio na FASE 1; obrigatório a partir da FASE 2.
+    service-account: ${FIREBASE_SERVICE_ACCOUNT:}
+    project-id: ${FIREBASE_PROJECT_ID:pet-connect-c53f1}
+
+logging:
+  level:
+    com.petconnect.api: INFO

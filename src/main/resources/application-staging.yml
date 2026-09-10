@@ -1,0 +1,13 @@
+# Ambiente de homologação. Todos os valores sensíveis via env vars.
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}   # Atlas (staging) — obrigatório
+
+petconnect:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+logging:
+  level:
+    com.petconnect.api: INFO
