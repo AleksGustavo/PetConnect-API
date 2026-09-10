@@ -15,6 +15,10 @@ petconnect:
       - http://localhost
       - http://localhost:3000
       - http://10.0.2.2        # emulador Android acessando o host
+  firebase:
+    # Caminho para o JSON da conta de serviço DEDICADA ao backend (fora do repo).
+    # Defina no ambiente: FIREBASE_SERVICE_ACCOUNT=C:\caminho\para\petconnect-backend-sa.json
+    service-account: ${FIREBASE_SERVICE_ACCOUNT:}
 
 logging:
   level:

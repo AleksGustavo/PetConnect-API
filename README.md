@@ -78,8 +78,27 @@ Toda resposta de erro:
 
 Sem stack trace, sem detalhe interno.
 
-## Estado atual (FASE 1)
+## Estado atual (FASE 2)
 
-Esqueleto: sobe, health/ping/swagger funcionam, segurança stateless com rotas
-públicas liberadas e o resto exigindo autenticação (mecanismo entra na FASE 2).
-Nenhum módulo de domínio implementado ainda.
+- **FASE 1** — esqueleto: sobe, health/ping/swagger, segurança stateless, formato de erro único.
+- **FASE 2** — autenticação:
+  - `FirebaseTokenAuthenticationFilter` valida `Authorization: Bearer <Firebase ID Token>`
+    via Admin SDK e popula o `SecurityContext`. Sem a credencial configurada, rotas
+    protegidas respondem `401` (dev/CI seguem funcionando).
+  - Módulo `user`: documento `users` (`firebaseUid` único, `roles`, timestamps),
+    provisionamento no 1º acesso, `GET /api/v1/me` e `PATCH /api/v1/me`.
+  - 7 testes verdes (context load + `MeControllerTest` com `FirebaseTokenVerifier` mockado).
+
+### Configurar a credencial do Firebase (dev)
+
+1. Firebase Console → Configurações do projeto → Contas de serviço → **Gerar nova chave privada**
+   (uma chave **dedicada ao backend**, separada da usada no script de backup).
+2. Salve o JSON **fora do repositório**.
+3. Aponte a env var antes de rodar:
+   ```bash
+   export FIREBASE_SERVICE_ACCOUNT="/caminho/para/petconnect-backend-sa.json"   # bash
+   $env:FIREBASE_SERVICE_ACCOUNT = "C:\caminho\para\petconnect-backend-sa.json" # PowerShell
+   ```
+   (aceita também o JSON inteiro em base64, útil para hosts que só têm env vars)
+
+Próximo: **FASE 3** — migração de dados (`users` + `pets` + `locations`) do export do Firestore.
