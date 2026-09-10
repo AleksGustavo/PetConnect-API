@@ -19,6 +19,7 @@ bin/
 *firebase*adminsdk*.json
 .env
 .env.*
+!.env.example
 application-local.yml
 application-local.yaml
 src/main/resources/firebase-service-account.json

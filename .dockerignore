@@ -1,0 +1,9 @@
+target/
+.git/
+.idea/
+*.iml
+.env
+*firebase*adminsdk*.json
+*serviceAccountKey*.json
+src/main/resources/application-local.yml
+README.md

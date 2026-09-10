@@ -1,5 +1,6 @@
 package com.petconnect.api.shared.config;
 
+import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -54,6 +55,10 @@ public class FirebaseConfig {
         }
         try (InputStream credentials = openCredentials(props.serviceAccount())) {
             FirebaseOptions.Builder options = FirebaseOptions.builder()
+                    // Transporte HTTP bloqueante (HttpURLConnection). O transporte
+                    // assíncrono padrão (ApacheHttp2Transport) abre um NIO Selector,
+                    // que falha nesta máquina ("Unable to establish loopback connection").
+                    .setHttpTransport(new NetHttpTransport())
                     .setCredentials(GoogleCredentials.fromStream(credentials));
             if (props.projectId() != null && !props.projectId().isBlank()) {
                 options.setProjectId(props.projectId());

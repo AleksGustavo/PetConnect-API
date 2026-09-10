@@ -36,15 +36,35 @@ com.petconnect.api
 
 ## Rodar em desenvolvimento
 
-Pré-requisitos: JDK 21, Maven, Docker.
+Pré-requisitos: Docker. (JDK 21 + Maven só para rodar os testes fora do container.)
+
+### Tudo em container (recomendado nesta máquina)
+
+O Windows desta máquina bloqueia as conexões de loopback que o Tomcat (NIO)
+precisa para iniciar (`Selector.open` → *Unable to establish loopback connection*).
+Rodar a API num container Linux resolve.
 
 ```bash
-docker compose up -d      # MongoDB em localhost:27018 (container petconnect-mongo)
-mvn spring-boot:run       # perfil dev; usa mongodb://localhost:27018/petconnect
+cp .env.example .env        # e ajuste FIREBASE_SA_PATH para o caminho do seu JSON
+docker compose up -d --build
+docker compose logs -f api
 ```
 
-> Porta **27018** (não 27017) para não colidir com outra instância de MongoDB
-> que já exista na máquina. Override com `MONGODB_URI` se quiser.
+| Recurso | URL |
+|---|---|
+| Ping | http://localhost:8080/api/v1/ping |
+| Health | http://localhost:8080/actuator/health |
+| Swagger | http://localhost:8080/swagger-ui.html |
+| MongoDB | `mongodb://localhost:27018/petconnect` (container `petconnect-mongo`) |
+
+### Só o banco + API pela IDE
+
+Se a sua máquina não tiver o problema de loopback:
+
+```bash
+docker compose up -d mongo
+mvn spring-boot:run -Dspring-boot.run.profiles=dev,local   # usa src/main/resources/application-local.yml
+```
 
 | Recurso | URL |
 |---|---|

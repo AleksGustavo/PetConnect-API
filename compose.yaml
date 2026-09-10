@@ -1,8 +1,17 @@
-# MongoDB de desenvolvimento do PetConnect.
-# Porta 27018 no host para não colidir com outra instância local na 27017.
-#   docker compose up -d        # sobe
-#   docker compose down         # para (mantém os dados no volume)
-#   docker compose down -v      # para e apaga os dados
+# Ambiente de desenvolvimento do PetConnect (MongoDB + API).
+#
+#   docker compose up -d --build        # sobe tudo (recompila a API)
+#   docker compose up -d mongo          # só o banco
+#   docker compose logs -f api          # acompanha a API
+#   docker compose down                 # para (mantém os dados)
+#   docker compose down -v              # para e apaga os dados
+#
+# A API roda em container Linux de propósito: o Windows desta máquina bloqueia
+# as conexões de loopback que o Tomcat (NIO) precisa para iniciar.
+#
+# Variáveis lidas do arquivo .env (não versionado):
+#   FIREBASE_SA_PATH = caminho do JSON da conta de serviço do Firebase
+
 services:
   mongo:
     image: mongo:7
@@ -12,6 +21,23 @@ services:
       - "27018:27017"
     volumes:
       - petconnect-mongo-data:/data/db
+
+  api:
+    build: .
+    container_name: petconnect-api
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "8090:8080"   # host 8090 (8080 costuma estar ocupada por outro dev server)
+    environment:
+      APP_ENV: dev
+      MONGODB_URI: mongodb://mongo:27017/petconnect
+      CORS_ALLOWED_ORIGINS: "http://localhost,http://localhost:3000,http://10.0.2.2"
+      FIREBASE_SERVICE_ACCOUNT: /app/config/firebase-sa.json
+      FIREBASE_PROJECT_ID: pet-connect-c53f1
+    volumes:
+      - ${FIREBASE_SA_PATH:-/dev/null}:/app/config/firebase-sa.json:ro
 
 volumes:
   petconnect-mongo-data:
