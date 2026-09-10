@@ -36,15 +36,15 @@ com.petconnect.api
 
 ## Rodar em desenvolvimento
 
-Pré-requisitos: JDK 21, Maven, e um MongoDB local (`mongodb://localhost:27017`) — ou use Docker:
+Pré-requisitos: JDK 21, Maven, Docker.
 
 ```bash
-docker run -d --name petconnect-mongo -p 27017:27017 mongo:7
+docker compose up -d      # MongoDB em localhost:27018 (container petconnect-mongo)
+mvn spring-boot:run       # perfil dev; usa mongodb://localhost:27018/petconnect
 ```
 
-```bash
-mvn spring-boot:run
-```
+> Porta **27018** (não 27017) para não colidir com outra instância de MongoDB
+> que já exista na máquina. Override com `MONGODB_URI` se quiser.
 
 | Recurso | URL |
 |---|---|

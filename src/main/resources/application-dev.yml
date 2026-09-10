@@ -1,8 +1,10 @@
 # Ambiente de desenvolvimento local.
+# Container dedicado 'petconnect-mongo' na porta 27018 (27017 costuma estar ocupada
+# por outra instalacao). Suba com: docker compose up -d  (compose.yaml na raiz)
 spring:
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/petconnect_dev}
+      uri: ${MONGODB_URI:mongodb://localhost:27018/petconnect}
 
 management:
   endpoint:

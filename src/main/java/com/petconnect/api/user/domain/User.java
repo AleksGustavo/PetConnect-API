@@ -9,7 +9,9 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -43,6 +45,8 @@ public class User {
 
     /** Origem do documento: {@code true} se veio da migração do Firestore. */
     private boolean legacyImport;
+
+    private List<String> migrationWarnings = new ArrayList<>();
 
     @CreatedDate
     private Instant createdAt;
@@ -151,6 +155,14 @@ public class User {
 
     public void setLegacyImport(boolean legacyImport) {
         this.legacyImport = legacyImport;
+    }
+
+    public List<String> getMigrationWarnings() {
+        return migrationWarnings;
+    }
+
+    public void setMigrationWarnings(List<String> migrationWarnings) {
+        this.migrationWarnings = migrationWarnings;
     }
 
     public Instant getCreatedAt() {

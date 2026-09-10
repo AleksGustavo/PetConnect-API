@@ -1,0 +1,15 @@
+# Perfil 'migration' — executa o MigrationRunner e encerra.
+# Sem servidor web (é um job batch, não uma API).
+spring:
+  main:
+    web-application-type: none
+    banner-mode: "off"
+
+logging:
+  level:
+    com.petconnect.api.migration: INFO
+    org.mongodb.driver: WARN
+
+petconnect:
+  migration:
+    exit-when-done: true

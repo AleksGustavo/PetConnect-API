@@ -1,0 +1,17 @@
+# MongoDB de desenvolvimento do PetConnect.
+# Porta 27018 no host para não colidir com outra instância local na 27017.
+#   docker compose up -d        # sobe
+#   docker compose down         # para (mantém os dados no volume)
+#   docker compose down -v      # para e apaga os dados
+services:
+  mongo:
+    image: mongo:7
+    container_name: petconnect-mongo
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - petconnect-mongo-data:/data/db
+
+volumes:
+  petconnect-mongo-data:
