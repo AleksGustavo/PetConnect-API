@@ -6,11 +6,14 @@ import com.petconnect.api.user.application.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Perfil do tutor autenticado. */
@@ -36,5 +39,12 @@ public class MeController {
     public UserResponse updateMe(@AuthenticationPrincipal AuthenticatedUser principal,
                                  @Valid @RequestBody UpdateMeRequest body) {
         return UserResponse.from(users.update(principal.firebaseUid(), body.toProfileUpdate()));
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Exclui a conta do usuário autenticado (RF09): cascata de pets/localizações + Firebase Auth")
+    public void deleteMe(@AuthenticationPrincipal AuthenticatedUser principal) {
+        users.deleteAccount(principal.firebaseUid());
     }
 }
