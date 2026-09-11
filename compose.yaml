@@ -11,6 +11,10 @@
 #
 # Variáveis lidas do arquivo .env (não versionado):
 #   FIREBASE_SA_PATH = caminho do JSON da conta de serviço do Firebase
+#   FIREBASE_AUTH_EMULATOR_HOST = só para rodar auth_flow_test.dart contra o
+#     Firebase Auth Emulator local (ex.: host.docker.internal:9099). Vazio
+#     (padrão) em dev/prod normal — o Admin SDK ignora a variável vazia e
+#     verifica tokens reais como sempre.
 
 services:
   mongo:
@@ -36,6 +40,7 @@ services:
       CORS_ALLOWED_ORIGINS: "http://localhost,http://localhost:3000,http://10.0.2.2"
       FIREBASE_SERVICE_ACCOUNT: /app/config/firebase-sa.json
       FIREBASE_PROJECT_ID: pet-connect-c53f1
+      FIREBASE_AUTH_EMULATOR_HOST: ${FIREBASE_AUTH_EMULATOR_HOST:-}
     volumes:
       - ${FIREBASE_SA_PATH:-/dev/null}:/app/config/firebase-sa.json:ro
 
