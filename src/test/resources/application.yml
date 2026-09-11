@@ -20,3 +20,9 @@ petconnect:
   firebase:
     service-account: ""
     project-id: pet-connect-c53f1
+  cloudinary:
+    # Valores de teste — nunca reais. CloudinaryClient é mockado nos testes
+    # que chamam destroy(); nenhum desses valores sai para a internet.
+    cloud-name: test-cloud
+    api-key: test-api-key
+    api-secret: test-api-secret

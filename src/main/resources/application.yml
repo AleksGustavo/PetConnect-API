@@ -46,6 +46,13 @@ petconnect:
     # Vazio na FASE 1; obrigatório a partir da FASE 2.
     service-account: ${FIREBASE_SERVICE_ACCOUNT:}
     project-id: ${FIREBASE_PROJECT_ID:pet-connect-c53f1}
+  cloudinary:
+    # cloud-name não é segredo (já está em cloudinary_config.dart no app).
+    # api-key/api-secret são segredos de verdade — vazios até configurar
+    # (endpoints de upload respondem 503 até lá). FASE 10.
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:qgrx3f8s}
+    api-key: ${CLOUDINARY_API_KEY:}
+    api-secret: ${CLOUDINARY_API_SECRET:}
 
 logging:
   level:
