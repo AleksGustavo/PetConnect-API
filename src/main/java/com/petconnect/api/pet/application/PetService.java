@@ -1,5 +1,6 @@
 package com.petconnect.api.pet.application;
 
+import com.petconnect.api.appointment.infrastructure.AppointmentRepository;
 import com.petconnect.api.location.infrastructure.LocationRepository;
 import com.petconnect.api.pet.domain.Pet;
 import com.petconnect.api.pet.infrastructure.PetRepository;
@@ -22,11 +23,14 @@ public class PetService {
     private final PetRepository pets;
     private final LocationRepository locations;
     private final VaccineRepository vaccines;
+    private final AppointmentRepository appointments;
 
-    public PetService(PetRepository pets, LocationRepository locations, VaccineRepository vaccines) {
+    public PetService(PetRepository pets, LocationRepository locations, VaccineRepository vaccines,
+                      AppointmentRepository appointments) {
         this.pets = pets;
         this.locations = locations;
         this.vaccines = vaccines;
+        this.appointments = appointments;
     }
 
     public List<Pet> list(String tutorId) {
@@ -78,6 +82,7 @@ public class PetService {
         Pet p = ownedOr404(tutorId, petId);
         locations.deleteByPetIdIn(List.of(p.getId()));
         vaccines.deleteByPetId(p.getId());
+        appointments.deleteByPetId(p.getId());
         pets.delete(p);
     }
 
