@@ -53,6 +53,11 @@ petconnect:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:qgrx3f8s}
     api-key: ${CLOUDINARY_API_KEY:}
     api-secret: ${CLOUDINARY_API_SECRET:}
+  rate-limit:
+    # Só vale pros endpoints públicos (/api/v1/public/**) — os únicos sem
+    # autenticação. FASE 11.
+    public-read-per-minute: ${RATE_LIMIT_PUBLIC_READ:30}
+    public-write-per-minute: ${RATE_LIMIT_PUBLIC_WRITE:10}
 
 logging:
   level:

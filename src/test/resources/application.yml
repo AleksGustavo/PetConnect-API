@@ -26,3 +26,9 @@ petconnect:
     cloud-name: test-cloud
     api-key: test-api-key
     api-secret: test-api-secret
+  rate-limit:
+    # Generoso o bastante pra nenhum teste "normal" (poucas chamadas por
+    # classe) esbarrar nele sem querer. O teste dedicado do rate limit
+    # sobrescreve isto via @TestPropertySource + @DirtiesContext.
+    public-read-per-minute: 1000
+    public-write-per-minute: 1000

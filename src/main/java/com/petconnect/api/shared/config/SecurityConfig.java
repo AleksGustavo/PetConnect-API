@@ -5,6 +5,8 @@ import com.petconnect.api.shared.error.ApiError;
 import com.petconnect.api.shared.security.AuthenticatedUserResolver;
 import com.petconnect.api.shared.security.FirebaseTokenAuthenticationFilter;
 import com.petconnect.api.shared.security.FirebaseTokenVerifier;
+import com.petconnect.api.shared.web.PublicEndpointRateLimitFilter;
+import com.petconnect.api.shared.web.RateLimiter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +60,8 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http,
                                     @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource,
                                     ObjectMapper mapper,
+                                    RateLimiter rateLimiter,
+                                    RateLimitProperties rateLimitProperties,
                                     org.springframework.beans.factory.ObjectProvider<FirebaseTokenVerifier> verifier,
                                     org.springframework.beans.factory.ObjectProvider<AuthenticatedUserResolver> userResolver) throws Exception {
         http
@@ -74,6 +78,13 @@ public class SecurityConfig {
                         .accessDeniedHandler((req, res, e) ->
                                 writeError(res, mapper, HttpStatus.FORBIDDEN,
                                         "FORBIDDEN", "Acesso negado.")));
+
+        // Antes do filtro de auth: os endpoints públicos não passam por ele mesmo
+        // (shouldNotFilter cuida disso), então a ordem relativa não importa, mas
+        // ambos precisam estar "antes" do filtro padrão de login/senha do Spring
+        // Security (que esta API nem usa, é só o ponto de ancoragem convencional).
+        http.addFilterBefore(new PublicEndpointRateLimitFilter(rateLimiter, rateLimitProperties, mapper),
+                UsernamePasswordAuthenticationFilter.class);
 
         FirebaseTokenVerifier v = verifier.getIfAvailable();
         AuthenticatedUserResolver r = userResolver.getIfAvailable();
