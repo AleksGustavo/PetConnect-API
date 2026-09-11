@@ -92,7 +92,8 @@ public class FirebaseTokenAuthenticationFilter extends OncePerRequestFilter {
                 "/actuator/info",
                 "/v3/api-docs",
                 "/swagger-ui",
-                "/api/v1/ping"
+                "/api/v1/ping",
+                "/api/v1/public"
         ).stream().anyMatch(path::startsWith);
     }
 }

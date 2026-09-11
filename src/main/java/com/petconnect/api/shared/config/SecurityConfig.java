@@ -48,7 +48,10 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/v1/ping"
+            "/api/v1/ping",
+            // Página pública do QR (RF17-19) e relato anônimo de avistamento (RF31) —
+            // nunca expõem dado do tutor, ver PublicPetController.
+            "/api/v1/public/**"
     };
 
     @Bean
