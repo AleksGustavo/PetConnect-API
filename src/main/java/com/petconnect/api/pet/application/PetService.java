@@ -6,6 +6,7 @@ import com.petconnect.api.pet.infrastructure.PetRepository;
 import com.petconnect.api.pet.web.CreatePetRequest;
 import com.petconnect.api.pet.web.UpdatePetRequest;
 import com.petconnect.api.shared.error.ApiException;
+import com.petconnect.api.vaccine.infrastructure.VaccineRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,10 +21,12 @@ public class PetService {
 
     private final PetRepository pets;
     private final LocationRepository locations;
+    private final VaccineRepository vaccines;
 
-    public PetService(PetRepository pets, LocationRepository locations) {
+    public PetService(PetRepository pets, LocationRepository locations, VaccineRepository vaccines) {
         this.pets = pets;
         this.locations = locations;
+        this.vaccines = vaccines;
     }
 
     public List<Pet> list(String tutorId) {
@@ -74,6 +77,7 @@ public class PetService {
     public void delete(String tutorId, String petId) {
         Pet p = ownedOr404(tutorId, petId);
         locations.deleteByPetIdIn(List.of(p.getId()));
+        vaccines.deleteByPetId(p.getId());
         pets.delete(p);
     }
 

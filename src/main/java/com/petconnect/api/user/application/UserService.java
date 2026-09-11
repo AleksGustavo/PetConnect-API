@@ -2,9 +2,8 @@ package com.petconnect.api.user.application;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
-import com.petconnect.api.location.infrastructure.LocationRepository;
+import com.petconnect.api.pet.application.PetService;
 import com.petconnect.api.pet.domain.Pet;
-import com.petconnect.api.pet.infrastructure.PetRepository;
 import com.petconnect.api.shared.error.ApiException;
 import com.petconnect.api.shared.security.AuthenticatedUser;
 import com.petconnect.api.shared.security.AuthenticatedUserResolver;
@@ -27,15 +26,13 @@ public class UserService implements AuthenticatedUserResolver {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository users;
-    private final PetRepository pets;
-    private final LocationRepository locations;
+    private final PetService petService;
     private final ObjectProvider<FirebaseAuth> firebaseAuth;
 
-    public UserService(UserRepository users, PetRepository pets, LocationRepository locations,
+    public UserService(UserRepository users, PetService petService,
                        ObjectProvider<FirebaseAuth> firebaseAuth) {
         this.users = users;
-        this.pets = pets;
-        this.locations = locations;
+        this.petService = petService;
         this.firebaseAuth = firebaseAuth;
     }
 
@@ -94,18 +91,17 @@ public class UserService implements AuthenticatedUserResolver {
     }
 
     /**
-     * Exclusão de conta (RF09): apaga em cascata os pets do tutor e seus
-     * registros de localização, faz soft-delete do documento do usuário e
-     * remove o usuário do Firebase Auth (quando o Admin SDK está configurado).
+     * Exclusão de conta (RF09): apaga em cascata cada pet do tutor (o que, via
+     * {@link PetService#delete}, remove localizações, vacinas, etc.), faz
+     * soft-delete do documento do usuário e remove o usuário do Firebase Auth
+     * (quando o Admin SDK está configurado).
      */
     public void deleteAccount(String firebaseUid) {
         User user = getByFirebaseUid(firebaseUid);
 
-        List<Pet> ownedPets = pets.findByTutorId(user.getId());
-        List<String> petIds = ownedPets.stream().map(Pet::getId).toList();
-        if (!petIds.isEmpty()) {
-            locations.deleteByPetIdIn(petIds);
-            pets.deleteAll(ownedPets);
+        List<Pet> ownedPets = petService.list(user.getId());
+        for (Pet p : ownedPets) {
+            petService.delete(user.getId(), p.getId());
         }
 
         user.setDeletedAt(Instant.now());
@@ -124,6 +120,6 @@ public class UserService implements AuthenticatedUserResolver {
             log.info("Firebase Admin SDK ausente — usuário {} não removido do Auth pelo servidor.", firebaseUid);
         }
 
-        log.info("Conta excluída: user {} ({} pets, cascata de localizações).", user.getId(), petIds.size());
+        log.info("Conta excluída: user {} ({} pets em cascata).", user.getId(), ownedPets.size());
     }
 }
