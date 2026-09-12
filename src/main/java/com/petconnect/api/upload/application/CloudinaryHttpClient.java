@@ -34,12 +34,17 @@ public class CloudinaryHttpClient implements CloudinaryClient {
     @Override
     public boolean destroy(String resourceType, String publicId) {
         long timestamp = Instant.now().getEpochSecond();
+        // invalidate=true: sem isto, o Cloudinary só remove o arquivo do storage —
+        // a URL antiga continua servível pela CDN até o cache expirar sozinho
+        // (visto na prática: Cache-Control immutable, max-age de 30 dias). Achado
+        // testando de ponta a ponta contra a conta real, não hipotético.
         String signature = CloudinarySigner.sign(
-                Map.of("public_id", publicId, "timestamp", String.valueOf(timestamp)),
+                Map.of("public_id", publicId, "invalidate", "true", "timestamp", String.valueOf(timestamp)),
                 props.apiSecret());
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("public_id", publicId);
+        form.add("invalidate", "true");
         form.add("timestamp", String.valueOf(timestamp));
         form.add("api_key", props.apiKey());
         form.add("signature", signature);
