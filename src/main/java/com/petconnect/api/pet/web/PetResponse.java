@@ -22,6 +22,7 @@ public record PetResponse(
         String publicContactPhone,
         String photoUrl,
         String coverPhotoUrl,
+        Double coverPhotoAlignY,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -43,6 +44,7 @@ public record PetResponse(
                 p.getPublicContactPhone(),
                 p.getPhotoUrl(),
                 p.getCoverPhotoUrl(),
+                p.getCoverPhotoAlignY(),
                 p.getCreatedAt(),
                 p.getUpdatedAt());
     }

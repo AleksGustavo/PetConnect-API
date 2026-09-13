@@ -5,6 +5,7 @@ import com.petconnect.api.pet.domain.PetSize;
 import com.petconnect.api.pet.domain.PetStatus;
 import com.petconnect.api.pet.domain.Species;
 import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -25,6 +26,7 @@ public record CreatePetRequest(
         Boolean vaccinatedFlag,
         @Size(max = 30) String publicContactPhone,
         @Size(max = 2048) String photoUrl,
-        @Size(max = 2048) String coverPhotoUrl
+        @Size(max = 2048) String coverPhotoUrl,
+        @DecimalMin("-1.0") @DecimalMax("1.0") Double coverPhotoAlignY
 ) {
 }

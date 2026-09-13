@@ -62,6 +62,7 @@ public class PetService {
         p.setPublicContactPhone(trimToNull(req.publicContactPhone()));
         p.setPhotoUrl(trimToNull(req.photoUrl()));
         p.setCoverPhotoUrl(trimToNull(req.coverPhotoUrl()));
+        p.setCoverPhotoAlignY(req.coverPhotoAlignY());
         return pets.save(p);
     }
 
@@ -80,6 +81,7 @@ public class PetService {
         if (req.publicContactPhone() != null) p.setPublicContactPhone(trimToNull(req.publicContactPhone()));
         if (req.photoUrl() != null) p.setPhotoUrl(trimToNull(req.photoUrl()));
         if (req.coverPhotoUrl() != null) p.setCoverPhotoUrl(trimToNull(req.coverPhotoUrl()));
+        if (req.coverPhotoAlignY() != null) p.setCoverPhotoAlignY(req.coverPhotoAlignY());
         return pets.save(p);
     }
 
