@@ -23,6 +23,7 @@ public record UpdatePetRequest(
         PetStatus status,
         Boolean vaccinatedFlag,
         @Size(max = 30) String publicContactPhone,
-        @Size(max = 2048) String photoUrl
+        @Size(max = 2048) String photoUrl,
+        @Size(max = 2048) String coverPhotoUrl
 ) {
 }
