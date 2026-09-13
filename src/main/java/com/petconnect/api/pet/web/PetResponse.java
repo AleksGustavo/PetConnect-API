@@ -21,6 +21,7 @@ public record PetResponse(
         Boolean vaccinatedFlag,
         String publicContactPhone,
         String photoUrl,
+        String coverPhotoUrl,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -41,6 +42,7 @@ public record PetResponse(
                 p.getVaccinatedFlag(),
                 p.getPublicContactPhone(),
                 p.getPhotoUrl(),
+                p.getCoverPhotoUrl(),
                 p.getCreatedAt(),
                 p.getUpdatedAt());
     }

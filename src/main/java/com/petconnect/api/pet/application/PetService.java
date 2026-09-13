@@ -61,6 +61,7 @@ public class PetService {
         p.setVaccinatedFlag(req.vaccinatedFlag());
         p.setPublicContactPhone(trimToNull(req.publicContactPhone()));
         p.setPhotoUrl(trimToNull(req.photoUrl()));
+        p.setCoverPhotoUrl(trimToNull(req.coverPhotoUrl()));
         return pets.save(p);
     }
 
@@ -78,6 +79,7 @@ public class PetService {
         if (req.vaccinatedFlag() != null) p.setVaccinatedFlag(req.vaccinatedFlag());
         if (req.publicContactPhone() != null) p.setPublicContactPhone(trimToNull(req.publicContactPhone()));
         if (req.photoUrl() != null) p.setPhotoUrl(trimToNull(req.photoUrl()));
+        if (req.coverPhotoUrl() != null) p.setCoverPhotoUrl(trimToNull(req.coverPhotoUrl()));
         return pets.save(p);
     }
 

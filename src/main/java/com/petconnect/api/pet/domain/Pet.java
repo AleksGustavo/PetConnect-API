@@ -41,6 +41,7 @@ public class Pet {
     private Boolean vaccinatedFlag;
     private String publicContactPhone;
     private String photoUrl;
+    private String coverPhotoUrl;
 
     private String legacyQrCodeId;
     private String legacyFirestoreId;
@@ -167,6 +168,14 @@ public class Pet {
 
     public void setPhotoUrl(String photoUrl) {
         this.photoUrl = photoUrl;
+    }
+
+    public String getCoverPhotoUrl() {
+        return coverPhotoUrl;
+    }
+
+    public void setCoverPhotoUrl(String coverPhotoUrl) {
+        this.coverPhotoUrl = coverPhotoUrl;
     }
 
     public String getLegacyQrCodeId() {

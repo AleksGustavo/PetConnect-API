@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -108,6 +109,33 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.name").value("Rex II"))
                 .andExpect(jsonPath("$.status").value("LOST"))
                 .andExpect(jsonPath("$.weightKg").value(15.0));
+    }
+
+    @Test
+    void definePodeLimparEDepoisReenviarCapaDoPet() throws Exception {
+        String id = criarPet("{\"name\":\"Rex\"}");
+
+        mvc.perform(patch("/api/v1/pets/" + id)
+                        .header("Authorization", bearerA())
+                        .contentType("application/json")
+                        .content("{\"coverPhotoUrl\":\"https://res.cloudinary.com/x/cover.jpg\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.coverPhotoUrl").value("https://res.cloudinary.com/x/cover.jpg"));
+
+        // string vazia limpa; campo ausente (null) não mexe no que já está lá.
+        mvc.perform(patch("/api/v1/pets/" + id)
+                        .header("Authorization", bearerA())
+                        .contentType("application/json")
+                        .content("{\"coverPhotoUrl\":\"\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.coverPhotoUrl").value(nullValue()));
+
+        mvc.perform(patch("/api/v1/pets/" + id)
+                        .header("Authorization", bearerA())
+                        .contentType("application/json")
+                        .content("{\"name\":\"Rex II\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.coverPhotoUrl").value(nullValue()));
     }
 
     @Test
