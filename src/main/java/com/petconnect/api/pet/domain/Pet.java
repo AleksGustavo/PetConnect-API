@@ -43,6 +43,14 @@ public class Pet {
     private String photoUrl;
     private String coverPhotoUrl;
 
+    /**
+     * Alinhamento vertical da capa dentro do cabeçalho, de -1.0 (topo) a 1.0
+     * (base); 0.0 (ou {@code null}) é o centro. Mesma escala do eixo Y de
+     * {@code Alignment} no Flutter — deixa o tutor escolher qual parte da
+     * foto aparece, em vez do recorte automático.
+     */
+    private Double coverPhotoAlignY;
+
     private String legacyQrCodeId;
     private String legacyFirestoreId;
     private boolean legacyImport;
@@ -176,6 +184,14 @@ public class Pet {
 
     public void setCoverPhotoUrl(String coverPhotoUrl) {
         this.coverPhotoUrl = coverPhotoUrl;
+    }
+
+    public Double getCoverPhotoAlignY() {
+        return coverPhotoAlignY;
+    }
+
+    public void setCoverPhotoAlignY(Double coverPhotoAlignY) {
+        this.coverPhotoAlignY = coverPhotoAlignY;
     }
 
     public String getLegacyQrCodeId() {

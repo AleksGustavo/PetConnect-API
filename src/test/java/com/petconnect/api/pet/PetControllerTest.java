@@ -139,6 +139,38 @@ class PetControllerTest {
     }
 
     @Test
+    void definePosicaoDaCapaDentroDaFaixaValida() throws Exception {
+        String id = criarPet("{\"name\":\"Rex\"}");
+
+        mvc.perform(patch("/api/v1/pets/" + id)
+                        .header("Authorization", bearerA())
+                        .contentType("application/json")
+                        .content("{\"coverPhotoAlignY\":-0.5}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.coverPhotoAlignY").value(-0.5));
+
+        // Campo ausente não mexe no valor já salvo.
+        mvc.perform(patch("/api/v1/pets/" + id)
+                        .header("Authorization", bearerA())
+                        .contentType("application/json")
+                        .content("{\"name\":\"Rex II\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.coverPhotoAlignY").value(-0.5));
+    }
+
+    @Test
+    void rejeitaPosicaoDeCapaForaDaFaixaPermitida() throws Exception {
+        String id = criarPet("{\"name\":\"Rex\"}");
+
+        mvc.perform(patch("/api/v1/pets/" + id)
+                        .header("Authorization", bearerA())
+                        .contentType("application/json")
+                        .content("{\"coverPhotoAlignY\":1.5}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void deleteRemovePetEmCascataComLocalizacoes() throws Exception {
         String id = criarPet("{\"name\":\"Rex\"}");
         Location loc = new Location();
