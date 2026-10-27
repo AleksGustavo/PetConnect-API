@@ -75,6 +75,7 @@ public class LegacyMigrationService {
 
     public MigrationReport migrate(JsonNode root, String sourceLabel) {
         Instant startedAt = Instant.now();
+        Map<String, Pet> rotatedQrByLegacyId = rotatedQrCodes();
         wipePreviousImport();
 
         Map<String, Long> warningCounts = new TreeMap<>();
@@ -152,6 +153,7 @@ public class LegacyMigrationService {
 
             List<String> warnings = new ArrayList<>();
             Pet pet = mapPet(petFsId, node, userIdByFirestoreUid.get(ownerId), warnings);
+            keepRotatedQr(pet, rotatedQrByLegacyId.get(petFsId));
             Pet saved = pets.save(pet);
             petIdByFirestoreId.put(petFsId, saved.getId());
             pMig++;
@@ -256,6 +258,7 @@ public class LegacyMigrationService {
         p.setLegacyFirestoreId(legacyId);
         p.setLegacyImport(true);
         // publicId determinístico: reexecutar a migração não troca o QR do pet.
+        // Se o tutor regenerou o QR, keepRotatedQr substitui este valor.
         p.setPublicId(java.util.UUID.nameUUIDFromBytes(("pet:" + legacyId).getBytes()).toString());
         p.setName(LegacyValues.trimToNull(text(n, "nome")));
         p.setBreed(LegacyValues.trimToNull(text(n, "raca")));
@@ -338,6 +341,31 @@ public class LegacyMigrationService {
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /**
+     * QRs que o tutor regenerou (RF19) desde a última execução. Sem isto, o
+     * {@link #wipePreviousImport()} + {@code publicId} determinístico
+     * reativariam o QR antigo e derrubariam o novo.
+     */
+    private Map<String, Pet> rotatedQrCodes() {
+        Query rotated = new Query(Criteria.where("legacyImport").is(true)
+                .and("legacyFirestoreId").ne(null)
+                .and("publicIdRotatedAt").ne(null));
+        Map<String, Pet> byLegacyId = new HashMap<>();
+        for (Pet p : mongo.find(rotated, Pet.class)) {
+            byLegacyId.put(p.getLegacyFirestoreId(), p);
+        }
+        return byLegacyId;
+    }
+
+    private static void keepRotatedQr(Pet pet, Pet previous) {
+        if (previous == null) {
+            return;
+        }
+        pet.setPublicId(previous.getPublicId());
+        pet.setPublicIdRotatedAt(previous.getPublicIdRotatedAt());
+        pet.setPublicIdRotations(previous.getPublicIdRotations());
+    }
 
     private void wipePreviousImport() {
         Query legacy = new Query(Criteria.where("legacyImport").is(true));
