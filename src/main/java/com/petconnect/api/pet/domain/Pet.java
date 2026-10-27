@@ -26,6 +26,16 @@ public class Pet {
     @Indexed(unique = true)
     private String publicId = UUID.randomUUID().toString();
 
+    /**
+     * Quando o tutor regenerou o QR pela última vez (RF19); {@code null} se
+     * nunca regenerou. A migração usa isso para não desfazer a troca — ver
+     * {@code PetQrService}.
+     */
+    private Instant publicIdRotatedAt;
+
+    /** Quantas vezes o QR já foi regenerado. Só contagem, sem os ids antigos. */
+    private int publicIdRotations;
+
     @Indexed
     private String tutorId;
 
@@ -72,6 +82,22 @@ public class Pet {
 
     public void setPublicId(String publicId) {
         this.publicId = publicId;
+    }
+
+    public Instant getPublicIdRotatedAt() {
+        return publicIdRotatedAt;
+    }
+
+    public void setPublicIdRotatedAt(Instant publicIdRotatedAt) {
+        this.publicIdRotatedAt = publicIdRotatedAt;
+    }
+
+    public int getPublicIdRotations() {
+        return publicIdRotations;
+    }
+
+    public void setPublicIdRotations(int publicIdRotations) {
+        this.publicIdRotations = publicIdRotations;
     }
 
     public String getTutorId() {
