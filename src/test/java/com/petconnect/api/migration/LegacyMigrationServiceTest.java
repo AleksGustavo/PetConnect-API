@@ -206,6 +206,28 @@ class LegacyMigrationServiceTest {
     }
 
     @Test
+    void reexecucaoMantemQrRegeneradoPeloTutor() throws Exception {
+        service.migrate(root(), "run-1");
+        Pet rex = pets.findByLegacyFirestoreId("pet-ok").orElseThrow();
+        String deterministico = rex.getPublicId();
+        String regenerado = java.util.UUID.randomUUID().toString();
+        rex.setPublicId(regenerado);
+        rex.setPublicIdRotatedAt(java.time.Instant.parse("2026-10-27T12:00:00Z"));
+        rex.setPublicIdRotations(2);
+        pets.save(rex);
+
+        service.migrate(root(), "run-2");
+
+        Pet depois = pets.findByLegacyFirestoreId("pet-ok").orElseThrow();
+        assertThat(depois.getPublicId()).isEqualTo(regenerado).isNotEqualTo(deterministico);
+        assertThat(depois.getPublicIdRotations()).isEqualTo(2);
+        assertThat(pets.findByPublicId(deterministico)).isEmpty();
+        // Pet que nunca foi regenerado continua com o id determinístico.
+        assertThat(pets.findByLegacyFirestoreId("pet-weight-junk").orElseThrow().getPublicId())
+                .isEqualTo(java.util.UUID.nameUUIDFromBytes("pet:pet-weight-junk".getBytes()).toString());
+    }
+
+    @Test
     void gravaTrilhaDeAuditoria() throws Exception {
         service.migrate(root(), "synthetic");
 
