@@ -13,6 +13,7 @@ import com.petconnect.api.sharing.infrastructure.ConsentEventRepository;
 import com.petconnect.api.sharing.infrastructure.PublicSharingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -118,7 +119,8 @@ public class PublicSharingService {
             throw ApiException.badRequest("Marque a caixa de consentimento para publicar.");
         }
         if (!CONSENT_VERSION.equals(change.consentVersion())) {
-            throw ApiException.conflict("O texto do consentimento mudou. Atualize o app e confirme de novo.");
+            throw new ApiException(HttpStatus.CONFLICT, "CONSENT_VERSION_OUTDATED",
+                    "O texto do consentimento mudou. Atualize o app e confirme de novo.");
         }
         Set<PublicField> fields = change.fields() == null || change.fields().isEmpty()
                 ? EnumSet.noneOf(PublicField.class)
@@ -307,6 +309,6 @@ public class PublicSharingService {
     }
 
     private static ApiException memorialConflict() {
-        return ApiException.conflict("Pet no Memorial não tem página pública.");
+        return new ApiException(HttpStatus.CONFLICT, "PET_IN_MEMORIAL", "Pet no Memorial não tem página pública.");
     }
 }

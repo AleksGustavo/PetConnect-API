@@ -178,7 +178,8 @@ class PublicSharingControllerTest {
         salvar("tok-a", REX, publicar("", "")).andExpect(status().isBadRequest());
         salvar("tok-a", REX, "{\"enabled\":true,\"consentAccepted\":true,\"consentVersion\":\"2020-01-01\","
                 + "\"fields\":[\"PET_NAME\"]}")
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONSENT_VERSION_OUTDATED"));
         salvar("tok-a", REX, publicar("\"CONTACT_PHONE\"", ",\"contactPhone\":\"123\""))
                 .andExpect(status().isBadRequest());
         salvar("tok-a", REX, publicar("\"TUTOR_NAME\"", ",\"tutorDisplayName\":\"  \""))
@@ -280,7 +281,9 @@ class PublicSharingControllerTest {
 
     @Test
     void petNoMemorialNaoTemPaginaPublica() throws Exception {
-        salvar("tok-a", MEMORIAL, publicar("\"PET_NAME\"", "")).andExpect(status().isConflict());
+        salvar("tok-a", MEMORIAL, publicar("\"PET_NAME\"", ""))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PET_IN_MEMORIAL"));
         salvar("tok-a", MEMORIAL, "{\"enabled\":false}").andExpect(status().isOk());
         paginaPublica(publicIdDe(MEMORIAL)).andExpect(status().isNotFound());
         mvc.perform(post("/api/v1/public/pets/" + publicIdDe(MEMORIAL) + "/sightings")
