@@ -31,8 +31,40 @@ com.petconnect.api
 ├── vaccine/             |  1 módulo por contexto. Cada um:
 ├── appointment/         |  domain · application · infrastructure · web
 ├── medicalrecord/      /   (vazios na FASE 1)
-└── location/          /
+├── location/          /
+└── sharing/           página pública do QR com consentimento (épico #102 do app)
 ```
+
+## Página pública do QR com consentimento
+
+Fase 1 do épico [TecnoDreamer/PetConnect#102](https://github.com/TecnoDreamer/PetConnect/issues/102)
+(issue #35 do app). O tutor escolhe campo a campo o que a página do QR mostra e
+aceita um texto de consentimento versionado (`PublicSharingService.CONSENT_VERSION`).
+
+| Rota | Quem | O que faz |
+|---|---|---|
+| `GET/PUT /api/v1/legacy-pets/{firestoreId}/public-sharing` | tutor (token) | Configuração de um pet do app em modo Firestore |
+| `GET/PUT /api/v1/pets/{id}/public-sharing` | tutor (token) | Configuração de um pet da API |
+| `GET /api/v1/public/pets/{publicId}` | público | Só os campos autorizados; sem consentimento, `{"shared": false}`. `Cache-Control: no-store` |
+| `POST /api/v1/public/pets/{publicId}/sightings` | público | Relato anônimo; responde `201` sem corpo |
+
+- **Campos publicáveis** (`PublicField`): `PET_NAME`, `SPECIES`, `BREED`, `COLOR`,
+  `PROFILE_PHOTO`, `TUTOR_NAME`, `CONTACT_PHONE` (E.164, ver `ContactPhone`).
+- **Coleções:**
+  - `pet_public_sharing`: uma configuração por pet, fora de `pets`, para a
+    migração não apagar o consentimento;
+  - `public_sharing_consent_events`: histórico só de inclusão, com o escopo e
+    sem os valores.
+- **Pets do Firestore** (`FirestorePets`): a API lê `Pets/{id}` a cada acesso
+  com o Admin SDK. A posse vem de lá, pets que a migração ainda não levou ao
+  MongoDB funcionam, e pet excluído ou no Memorial some da página na hora.
+- **Credencial:** a conta de serviço de `FIREBASE_SERVICE_ACCOUNT` precisa de
+  leitura no Firestore (papel `roles/datastore.viewer` ou superior). Sem isso:
+  - salvar a configuração responde `503`;
+  - a página de um pet publicado responde `503`;
+  - a página de um pet sem publicação continua com o mínimo neutro.
+- **Exclusão:** excluir o pet ou a conta apaga a configuração, com o telefone
+  e o nome de exibição.
 
 ## Rodar em desenvolvimento
 

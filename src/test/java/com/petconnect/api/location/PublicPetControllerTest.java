@@ -1,10 +1,15 @@
 package com.petconnect.api.location;
 
+import com.petconnect.api.location.domain.LocationSource;
 import com.petconnect.api.location.infrastructure.LocationRepository;
 import com.petconnect.api.pet.domain.Pet;
 import com.petconnect.api.pet.domain.PetStatus;
 import com.petconnect.api.pet.domain.Species;
 import com.petconnect.api.pet.infrastructure.PetRepository;
+import com.petconnect.api.sharing.application.PublicSharingService;
+import com.petconnect.api.sharing.domain.PublicField;
+import com.petconnect.api.sharing.domain.PublicSharing;
+import com.petconnect.api.sharing.infrastructure.PublicSharingRepository;
 import com.petconnect.api.user.domain.User;
 import com.petconnect.api.user.infrastructure.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,15 +19,20 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.util.EnumSet;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Endpoints públicos (RF17-19, RF31) — sem {@code Authorization}, nunca
- * devem exigir token nem vazar dado do tutor.
+ * devem exigir token nem vazar dado do tutor. Os casos de consentimento de
+ * pets do Firestore estão em {@code PublicSharingControllerTest}.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -36,6 +46,8 @@ class PublicPetControllerTest {
     PetRepository pets;
     @Autowired
     LocationRepository locations;
+    @Autowired
+    PublicSharingRepository sharings;
 
     private String activePublicId;
     private String activePetId;
@@ -45,6 +57,7 @@ class PublicPetControllerTest {
         users.deleteAll();
         pets.deleteAll();
         locations.deleteAll();
+        sharings.deleteAll();
         String tutorId = users.save(User.provision("uid-a", "a@ex.com", "Ana", null)).getId();
 
         Pet active = new Pet();
@@ -66,15 +79,24 @@ class PublicPetControllerTest {
     }
 
     @Test
-    void resumoPublicoSemTokenNaoVazaDadoDoTutor() throws Exception {
+    void semConsentimentoOResumoPublicoEOMinimoNeutro() throws Exception {
+        // Nome, espécie, situação, foto e telefone existem no banco, mas o
+        // tutor não autorizou nada (issue #35 do app).
         mvc.perform(get("/api/v1/public/pets/" + activePublicId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Rex"))
-                .andExpect(jsonPath("$.species").value("DOG"))
-                .andExpect(jsonPath("$.status").value("LOST"))
-                .andExpect(jsonPath("$.publicContactPhone").value("19999990000"))
-                .andExpect(jsonPath("$.tutorId").doesNotExist())
-                .andExpect(jsonPath("$.id").doesNotExist());
+                .andExpect(content().json("{\"shared\":false}", true));
+    }
+
+    @Test
+    void comConsentimentoMostraSoOsCamposMarcadosDoPetDaApi() throws Exception {
+        PublicSharing s = PublicSharing.forApiPet(activePetId, "uid-a");
+        s.publish(EnumSet.of(PublicField.PET_NAME, PublicField.SPECIES), null, null,
+                PublicSharingService.CONSENT_VERSION, "uid-a", Instant.now());
+        sharings.save(s);
+
+        mvc.perform(get("/api/v1/public/pets/" + activePublicId))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"shared\":true,\"name\":\"Rex\",\"species\":\"DOG\"}", true));
     }
 
     @Test
@@ -82,7 +104,7 @@ class PublicPetControllerTest {
         mvc.perform(get("/api/v1/public/pets/" + activePublicId)
                         .header("Authorization", "Bearer isto-nao-e-um-token-valido"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Rex"));
+                .andExpect(jsonPath("$.shared").value(false));
     }
 
     @Test
@@ -105,10 +127,12 @@ class PublicPetControllerTest {
                         .contentType("application/json")
                         .content("{\"latitude\":-22.17,\"longitude\":-47.39,\"description\":\"Visto no parque\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.source").value("PUBLIC_QR"))
-                .andExpect(jsonPath("$.petId").value(activePetId));
+                // Sem corpo: nada de id interno nem eco do que foi enviado.
+                .andExpect(content().string(""));
 
-        assertThat(locations.findByPetIdOrderByReportedAtDesc(activePetId)).hasSize(1);
+        assertThat(locations.findByPetIdOrderByReportedAtDesc(activePetId))
+                .singleElement()
+                .satisfies(l -> assertThat(l.getSource()).isEqualTo(LocationSource.PUBLIC_QR));
     }
 
     @Test

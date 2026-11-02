@@ -1,27 +1,31 @@
 package com.petconnect.api.location.web;
 
-import com.petconnect.api.pet.domain.Pet;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.petconnect.api.sharing.application.PublicSharingService.PublicPetView;
 
 /**
- * O que a página pública do QR pode ver — nunca inclui {@code tutorId},
- * e-mail ou qualquer dado do tutor. Endpoint sem autenticação.
+ * O que a página pública do QR recebe. Só os campos que o tutor marcou e
+ * consentiu (issue #35 do app); os outros nem aparecem no JSON. Sem
+ * consentimento, só {@code shared: false}.
+ *
+ * <p>Nunca inclui id interno, {@code tutorId}, e-mail, situação ou dado
+ * clínico. Os nomes {@code name}, {@code species}, {@code photoUrl} e
+ * {@code publicContactPhone} são os que a página já usava.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record PublicPetSummaryResponse(
-        String publicId,
+        boolean shared,
         String name,
         String species,
-        String status,
+        String breed,
+        String color,
         String photoUrl,
+        String tutorName,
         String publicContactPhone
 ) {
 
-    public static PublicPetSummaryResponse from(Pet p) {
-        return new PublicPetSummaryResponse(
-                p.getPublicId(),
-                p.getName(),
-                p.getSpecies() == null ? null : p.getSpecies().name(),
-                p.getStatus() == null ? null : p.getStatus().name(),
-                p.getPhotoUrl(),
-                p.getPublicContactPhone());
+    public static PublicPetSummaryResponse from(PublicPetView v) {
+        return new PublicPetSummaryResponse(v.shared(), v.name(), v.species(), v.breed(), v.color(),
+                v.photoUrl(), v.tutorName(), v.contactPhone());
     }
 }
