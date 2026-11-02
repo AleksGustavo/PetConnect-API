@@ -203,7 +203,7 @@ public class PublicSharingService {
 
         FirestorePet live;
         try {
-            live = firestore.find(r.firestoreId()).orElseThrow(PublicSharingService::petNotFound);
+            live = firestore.find(r.firestoreId()).orElse(null);
         } catch (FirestorePets.Unavailable e) {
             log.warn("Firestore indisponível na página pública: {}", e.getMessage());
             // Sem publicação, o mínimo neutro não depende do Firestore.
@@ -211,6 +211,10 @@ public class PublicSharingService {
                 return PublicPetView.NEUTRAL;
             }
             throw ApiException.unavailable("Não foi possível carregar as informações agora.");
+        }
+        if (live == null) {
+            forgetDeletedPet(s);
+            throw petNotFound();
         }
         if (live.deceased()) {
             throw petNotFound();
@@ -226,7 +230,11 @@ public class PublicSharingService {
         Resolution r = resolve(publicId);
         if (r.firestoreId() != null) {
             try {
-                FirestorePet live = firestore.find(r.firestoreId()).orElseThrow(PublicSharingService::petNotFound);
+                FirestorePet live = firestore.find(r.firestoreId()).orElse(null);
+                if (live == null) {
+                    forgetDeletedPet(r.sharing());
+                    throw petNotFound();
+                }
                 if (live.deceased()) {
                     throw petNotFound();
                 }
@@ -241,6 +249,18 @@ public class PublicSharingService {
     }
 
     private record Resolution(Pet apiPet, String firestoreId, PublicSharing sharing) {
+    }
+
+    /**
+     * O tutor excluiu o pet no app (Firestore) e a configuração ficou aqui,
+     * com telefone e nome de exibição. Apaga no primeiro acesso ao QR; a
+     * exclusão da conta também apaga ({@code UserService.deleteAccount}).
+     */
+    private void forgetDeletedPet(PublicSharing s) {
+        if (s != null) {
+            sharings.delete(s);
+            log.info("Configuração da página pública apagada: pet excluído no Firestore ({}).", s.getPetKey());
+        }
     }
 
     private Resolution resolve(String publicId) {

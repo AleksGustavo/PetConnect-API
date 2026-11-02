@@ -293,6 +293,8 @@ class PublicSharingControllerTest {
         salvar("tok-a", REX, publicar("\"PET_NAME\"", "")).andExpect(status().isOk());
         when(firestore.find(REX)).thenReturn(Optional.empty());
         paginaPublica(publicIdDe(REX)).andExpect(status().isNotFound());
+        // A configuração (com telefone) não fica para trás.
+        assertThat(sharings.findByPetKey("fs:" + REX)).isEmpty();
     }
 
     @Test
