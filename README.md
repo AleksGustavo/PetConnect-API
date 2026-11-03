@@ -93,6 +93,44 @@ ou `GET /api/v1/pets/{id}/qr-activity` (token; outro tutor recebe `404`).
 - **Avistamentos:** não são apagados automaticamente. A política de retenção
   depende de revisão jurídica (issue #28 do app).
 
+## Avisos ao tutor (push)
+
+Fase 4 do épico (issue #36 do app). Firebase Cloud Messaging pelo Admin SDK,
+com a mesma credencial de `FIREBASE_SERVICE_ACCOUNT`.
+
+| Rota | Quem | O que faz |
+|---|---|---|
+| `PUT /api/v1/me/push-devices` com `{"token", "platform"}` | tutor (token) | Registra o aparelho. O token vai no corpo, nunca na URL |
+| `DELETE /api/v1/me/push-devices` com `{"token"}` | tutor (token) | Remove o aparelho (ao sair da conta). Só apaga o token do próprio usuário |
+| `GET/PUT /api/v1/legacy-pets/{firestoreId}/notification-preferences` | tutor (token) | `notifyOnAccess` e `notifyOnSighting` de um pet do Firestore |
+| `GET/PUT /api/v1/pets/{id}/notification-preferences` | tutor (token) | O mesmo para um pet da API |
+
+- **Quando avisa:**
+  - **acesso** (`qr_page_opened`): "O QR Code de [pet] foi acessado", no
+    máximo um a cada 15 minutos por pet. O texto diz que isso não confirma
+    que o pet foi visto;
+  - **avistamento**: "Novo avistamento de [pet]", a cada relato novo (o
+    mesmo `clientRequestId` não avisa de novo).
+- **Sem bloquear a página:** o envio roda numa thread virtual, fora da
+  requisição pública. Não há garantia de entrega nem de tempo.
+- **Payload:** só o nome do pet e os ids para o app abrir a tela certa
+  (`type`, `firestorePetId`, `apiPetId`). Nada do relato, do contato de quem
+  relatou ou da coordenada. No Android, canal `qr_avisos` e visibilidade
+  privada na tela bloqueada.
+- **Falhas:** uma nova tentativa em falha temporária; token inválido é
+  apagado. Cada aviso fica em `tutor_notifications` com `PENDING`, `SENT`,
+  `FAILED` ou `NO_DEVICE`, sem token nem texto, por 30 dias (TTL).
+- **Coleções novas:** `push_devices` (token único por aparelho),
+  `pet_notification_preferences` (uma por pet; sem documento, os dois avisos
+  ficam ligados) e `tutor_notifications`.
+- **Exclusão:** excluir a conta apaga aparelhos, preferências e histórico de
+  avisos; excluir o pet apaga as preferências dele.
+- **Credencial:** a conta de serviço precisa poder enviar mensagens pelo FCM.
+  A chave `firebase-adminsdk` do projeto já pode; uma conta dedicada precisa do
+  papel **Firebase Cloud Messaging API Admin** (`roles/firebasecloudmessaging.admin`),
+  e a API "Firebase Cloud Messaging API (V1)" precisa estar ativada no
+  projeto do Google Cloud.
+
 ## Rodar em desenvolvimento
 
 Pré-requisitos: Docker. (JDK 21 + Maven só para rodar os testes fora do container.)

@@ -1,6 +1,5 @@
 package com.petconnect.api.location.web;
 
-import com.petconnect.api.location.application.LocationService;
 import com.petconnect.api.qractivity.application.QrActivityService;
 import com.petconnect.api.shared.web.ApiV1;
 import com.petconnect.api.sharing.application.PublicSharingService;
@@ -28,12 +27,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicPetController {
 
     private final PublicSharingService sharing;
-    private final LocationService locations;
     private final QrActivityService activity;
 
-    public PublicPetController(PublicSharingService sharing, LocationService locations, QrActivityService activity) {
+    public PublicPetController(PublicSharingService sharing, QrActivityService activity) {
         this.sharing = sharing;
-        this.locations = locations;
         this.activity = activity;
     }
 
@@ -56,7 +53,7 @@ public class PublicPetController {
     @Operation(summary = "Relata um avistamento anônimo (sem autenticação)")
     public ResponseEntity<Void> reportSighting(@PathVariable String publicId,
                                                @Valid @RequestBody SightingRequest body) {
-        locations.reportSighting(sharing.resolveForSighting(publicId), body);
+        activity.reportSighting(publicId, body);
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).build();
     }
 
