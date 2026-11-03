@@ -8,6 +8,8 @@ import com.petconnect.api.pet.infrastructure.PetRepository;
 import com.petconnect.api.pet.web.CreatePetRequest;
 import com.petconnect.api.pet.web.UpdatePetRequest;
 import com.petconnect.api.shared.error.ApiException;
+import com.petconnect.api.sharing.domain.PublicSharing;
+import com.petconnect.api.sharing.infrastructure.PublicSharingRepository;
 import com.petconnect.api.vaccine.infrastructure.VaccineRepository;
 import org.springframework.stereotype.Service;
 
@@ -26,14 +28,17 @@ public class PetService {
     private final VaccineRepository vaccines;
     private final AppointmentRepository appointments;
     private final MedicalRecordRepository medicalRecords;
+    private final PublicSharingRepository sharings;
 
     public PetService(PetRepository pets, LocationRepository locations, VaccineRepository vaccines,
-                      AppointmentRepository appointments, MedicalRecordRepository medicalRecords) {
+                      AppointmentRepository appointments, MedicalRecordRepository medicalRecords,
+                      PublicSharingRepository sharings) {
         this.pets = pets;
         this.locations = locations;
         this.vaccines = vaccines;
         this.appointments = appointments;
         this.medicalRecords = medicalRecords;
+        this.sharings = sharings;
     }
 
     public List<Pet> list(String tutorId) {
@@ -91,6 +96,11 @@ public class PetService {
         vaccines.deleteByPetId(p.getId());
         appointments.deleteByPetId(p.getId());
         medicalRecords.deleteByPetId(p.getId());
+        // A configuração da página pública guarda telefone e nome de exibição.
+        sharings.deleteByPetKey(PublicSharing.apiKey(p.getId()));
+        if (p.getLegacyFirestoreId() != null) {
+            sharings.deleteByPetKey(PublicSharing.firestoreKey(p.getLegacyFirestoreId()));
+        }
         pets.delete(p);
     }
 

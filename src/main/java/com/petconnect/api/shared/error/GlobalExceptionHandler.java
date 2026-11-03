@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -38,6 +39,12 @@ public class GlobalExceptionHandler {
                         .collect(Collectors.joining("; "))
                 : "Requisição inválida.";
         return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", detail);
+    }
+
+    /** JSON malformado ou valor fora de um enum (ex.: campo público inexistente). */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadable(HttpMessageNotReadableException ex) {
+        return build(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Corpo da requisição inválido.");
     }
 
     @ExceptionHandler(AuthenticationException.class)

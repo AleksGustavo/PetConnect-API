@@ -9,6 +9,7 @@ import com.petconnect.api.shared.security.AuthenticatedUser;
 import com.petconnect.api.shared.security.AuthenticatedUserResolver;
 import com.petconnect.api.shared.security.TokenVerificationException;
 import com.petconnect.api.shared.security.VerifiedToken;
+import com.petconnect.api.sharing.infrastructure.PublicSharingRepository;
 import com.petconnect.api.user.domain.User;
 import com.petconnect.api.user.infrastructure.UserRepository;
 import org.slf4j.Logger;
@@ -27,12 +28,14 @@ public class UserService implements AuthenticatedUserResolver {
 
     private final UserRepository users;
     private final PetService petService;
+    private final PublicSharingRepository sharings;
     private final ObjectProvider<FirebaseAuth> firebaseAuth;
 
-    public UserService(UserRepository users, PetService petService,
+    public UserService(UserRepository users, PetService petService, PublicSharingRepository sharings,
                        ObjectProvider<FirebaseAuth> firebaseAuth) {
         this.users = users;
         this.petService = petService;
+        this.sharings = sharings;
         this.firebaseAuth = firebaseAuth;
     }
 
@@ -103,6 +106,8 @@ public class UserService implements AuthenticatedUserResolver {
         for (Pet p : ownedPets) {
             petService.delete(user.getId(), p.getId());
         }
+        // Páginas públicas de pets do Firestore que ainda não estavam em `pets`.
+        sharings.deleteByOwnerUid(firebaseUid);
 
         user.setDeletedAt(Instant.now());
         users.save(user);

@@ -122,9 +122,10 @@ class PetQrControllerTest {
 
         assertThat(novo).isNotEqualTo(publicIdOriginal);
         assertThat(java.util.UUID.fromString(novo).version()).isEqualTo(4);
+        // O QR novo resolve o pet; sem consentimento, a página recebe o mínimo neutro.
         mvc.perform(get("/api/v1/public/pets/" + novo))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Rex"));
+                .andExpect(jsonPath("$.shared").value(false));
         mvc.perform(get("/api/v1/public/pets/" + publicIdOriginal)).andExpect(status().isNotFound());
         mvc.perform(post("/api/v1/public/pets/" + publicIdOriginal + "/sightings")
                         .contentType("application/json").content("{}"))

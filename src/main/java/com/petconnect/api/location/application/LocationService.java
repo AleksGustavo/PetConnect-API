@@ -6,10 +6,7 @@ import com.petconnect.api.location.infrastructure.LocationRepository;
 import com.petconnect.api.location.web.LocationRequest;
 import com.petconnect.api.location.web.SightingRequest;
 import com.petconnect.api.pet.application.PetService;
-import com.petconnect.api.pet.domain.Pet;
-import com.petconnect.api.pet.domain.PetStatus;
-import com.petconnect.api.pet.infrastructure.PetRepository;
-import com.petconnect.api.shared.error.ApiException;
+import com.petconnect.api.sharing.application.PublicSharingService;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -25,12 +22,10 @@ public class LocationService {
 
     private final LocationRepository locations;
     private final PetService pets;
-    private final PetRepository petRepository;
 
-    public LocationService(LocationRepository locations, PetService pets, PetRepository petRepository) {
+    public LocationService(LocationRepository locations, PetService pets) {
         this.locations = locations;
         this.pets = pets;
-        this.petRepository = petRepository;
     }
 
     // ---------------------------------------------------------- autenticado (tutor)
@@ -57,20 +52,16 @@ public class LocationService {
 
     // ---------------------------------------------------------- público (sem auth)
 
-    /** Pet arquivado não aparece na página pública — evita reviver um caso encerrado. */
-    public Pet publicSummary(String publicId) {
-        Pet p = petRepository.findByPublicId(publicId)
-                .orElseThrow(() -> ApiException.notFound("Pet não encontrado."));
-        if (p.getStatus() == PetStatus.ARCHIVED) {
-            throw ApiException.notFound("Pet não encontrado.");
-        }
-        return p;
-    }
-
-    public Location reportSighting(String publicId, SightingRequest req) {
-        Pet p = publicSummary(publicId);
+    /**
+     * Relato anônimo da página do QR. O pet já vem resolvido e validado por
+     * {@code PublicSharingService.resolveForSighting}. {@code legacyPetId}
+     * guarda o id do Firestore: o pet pode ainda não estar em {@code pets}
+     * ({@code petId} nulo) ou ganhar outro {@code _id} na próxima migração.
+     */
+    public Location reportSighting(PublicSharingService.ResolvedPet pet, SightingRequest req) {
         Location l = new Location();
-        l.setPetId(p.getId());
+        l.setPetId(pet.apiPetId());
+        l.setLegacyPetId(pet.firestoreId());
         l.setSource(LocationSource.PUBLIC_QR);
         l.setReportedAt(Instant.now());
         l.setLatitude(req.latitude());

@@ -41,6 +41,11 @@ public class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.BAD_REQUEST, "BAD_REQUEST", message);
     }
 
+    /** Dependência externa (ex.: Firestore) fora do ar ou sem permissão. */
+    public static ApiException unavailable(String message) {
+        return new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE", message);
+    }
+
     /** Mesmo código do limite dos endpoints públicos ({@code PublicEndpointRateLimitFilter}). */
     public static ApiException tooManyRequests(String message) {
         return new ApiException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED", message);
