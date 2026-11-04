@@ -2,6 +2,9 @@ package com.petconnect.api.user.application;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
+import com.petconnect.api.notification.infrastructure.PetNotificationPreferencesRepository;
+import com.petconnect.api.notification.infrastructure.PushDeviceRepository;
+import com.petconnect.api.notification.infrastructure.TutorNotificationRepository;
 import com.petconnect.api.pet.application.PetService;
 import com.petconnect.api.pet.domain.Pet;
 import com.petconnect.api.shared.error.ApiException;
@@ -29,13 +32,20 @@ public class UserService implements AuthenticatedUserResolver {
     private final UserRepository users;
     private final PetService petService;
     private final PublicSharingRepository sharings;
+    private final PushDeviceRepository pushDevices;
+    private final PetNotificationPreferencesRepository notificationPreferences;
+    private final TutorNotificationRepository notifications;
     private final ObjectProvider<FirebaseAuth> firebaseAuth;
 
     public UserService(UserRepository users, PetService petService, PublicSharingRepository sharings,
-                       ObjectProvider<FirebaseAuth> firebaseAuth) {
+                       PushDeviceRepository pushDevices, PetNotificationPreferencesRepository notificationPreferences,
+                       TutorNotificationRepository notifications, ObjectProvider<FirebaseAuth> firebaseAuth) {
         this.users = users;
         this.petService = petService;
         this.sharings = sharings;
+        this.pushDevices = pushDevices;
+        this.notificationPreferences = notificationPreferences;
+        this.notifications = notifications;
         this.firebaseAuth = firebaseAuth;
     }
 
@@ -108,6 +118,9 @@ public class UserService implements AuthenticatedUserResolver {
         }
         // Páginas públicas de pets do Firestore que ainda não estavam em `pets`.
         sharings.deleteByOwnerUid(firebaseUid);
+        pushDevices.deleteByOwnerUid(firebaseUid);
+        notificationPreferences.deleteByOwnerUid(firebaseUid);
+        notifications.deleteByOwnerUid(firebaseUid);
 
         user.setDeletedAt(Instant.now());
         users.save(user);

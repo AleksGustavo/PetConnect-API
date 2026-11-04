@@ -2,6 +2,8 @@ package com.petconnect.api.qractivity.application;
 
 import com.petconnect.api.location.application.LocationService;
 import com.petconnect.api.location.domain.Location;
+import com.petconnect.api.location.web.SightingRequest;
+import com.petconnect.api.notification.application.TutorNotifier;
 import com.petconnect.api.pet.domain.Pet;
 import com.petconnect.api.pet.infrastructure.PetRepository;
 import com.petconnect.api.qractivity.domain.QrAccessEvent;
@@ -37,14 +39,17 @@ public class QrActivityService {
     private final QrAccessEventRepository accesses;
     private final PetRepository pets;
     private final RateLimiter limiter;
+    private final TutorNotifier notifier;
 
     public QrActivityService(PublicSharingService sharing, LocationService locations,
-                             QrAccessEventRepository accesses, PetRepository pets, RateLimiter limiter) {
+                             QrAccessEventRepository accesses, PetRepository pets, RateLimiter limiter,
+                             TutorNotifier notifier) {
         this.sharing = sharing;
         this.locations = locations;
         this.accesses = accesses;
         this.pets = pets;
         this.limiter = limiter;
+        this.notifier = notifier;
     }
 
     /**
@@ -58,8 +63,21 @@ public class QrActivityService {
         if (!limiter.tryConsume("qr-open:" + pet.petKey(), ACCESSES_PER_PET_PER_HOUR, Duration.ofHours(1))) {
             return Optional.empty();
         }
-        return Optional.of(accesses.save(
-                QrAccessEvent.pageOpened(pet.petKey(), pet.apiPetId(), pet.firestoreId(), Instant.now())));
+        QrAccessEvent saved = accesses.save(
+                QrAccessEvent.pageOpened(pet.petKey(), pet.apiPetId(), pet.firestoreId(), Instant.now()));
+        notifier.qrPageOpened(pet);
+        return Optional.of(saved);
+    }
+
+    /**
+     * Relato da página do QR, com ou sem localização. Avisa o tutor só quando
+     * o relato é novo: o mesmo envio repetido não gera outro aviso.
+     */
+    public Optional<Location> reportSighting(String publicId, SightingRequest body) {
+        ResolvedPet pet = sharing.resolveForSighting(publicId);
+        Optional<Location> saved = locations.reportSighting(pet, body);
+        saved.ifPresent(l -> notifier.sightingReported(pet, l.getLatitude() != null));
+        return saved;
     }
 
     public record Activity(List<Location> sightings, List<QrAccessEvent> recentAccesses, long accessesLast30Days) {

@@ -3,6 +3,7 @@ package com.petconnect.api.pet.application;
 import com.petconnect.api.appointment.infrastructure.AppointmentRepository;
 import com.petconnect.api.location.infrastructure.LocationRepository;
 import com.petconnect.api.medicalrecord.infrastructure.MedicalRecordRepository;
+import com.petconnect.api.notification.infrastructure.PetNotificationPreferencesRepository;
 import com.petconnect.api.pet.domain.Pet;
 import com.petconnect.api.pet.infrastructure.PetRepository;
 import com.petconnect.api.pet.web.CreatePetRequest;
@@ -31,10 +32,12 @@ public class PetService {
     private final MedicalRecordRepository medicalRecords;
     private final PublicSharingRepository sharings;
     private final QrAccessEventRepository qrAccesses;
+    private final PetNotificationPreferencesRepository notificationPreferences;
 
     public PetService(PetRepository pets, LocationRepository locations, VaccineRepository vaccines,
                       AppointmentRepository appointments, MedicalRecordRepository medicalRecords,
-                      PublicSharingRepository sharings, QrAccessEventRepository qrAccesses) {
+                      PublicSharingRepository sharings, QrAccessEventRepository qrAccesses,
+                      PetNotificationPreferencesRepository notificationPreferences) {
         this.pets = pets;
         this.locations = locations;
         this.vaccines = vaccines;
@@ -42,6 +45,7 @@ public class PetService {
         this.medicalRecords = medicalRecords;
         this.sharings = sharings;
         this.qrAccesses = qrAccesses;
+        this.notificationPreferences = notificationPreferences;
     }
 
     public List<Pet> list(String tutorId) {
@@ -102,9 +106,11 @@ public class PetService {
         // A configuração da página pública guarda telefone e nome de exibição.
         sharings.deleteByPetKey(PublicSharing.apiKey(p.getId()));
         qrAccesses.deleteByPetKey(PublicSharing.apiKey(p.getId()));
+        notificationPreferences.deleteByPetKey(PublicSharing.apiKey(p.getId()));
         if (p.getLegacyFirestoreId() != null) {
             sharings.deleteByPetKey(PublicSharing.firestoreKey(p.getLegacyFirestoreId()));
             qrAccesses.deleteByPetKey(PublicSharing.firestoreKey(p.getLegacyFirestoreId()));
+            notificationPreferences.deleteByPetKey(PublicSharing.firestoreKey(p.getLegacyFirestoreId()));
         }
         pets.delete(p);
     }

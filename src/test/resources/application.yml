@@ -32,3 +32,6 @@ petconnect:
     # sobrescreve isto via @TestPropertySource + @DirtiesContext.
     public-read-per-minute: 1000
     public-write-per-minute: 1000
+  notifications:
+    # Avisos na própria thread: o teste confere o resultado logo depois da chamada.
+    async: false
