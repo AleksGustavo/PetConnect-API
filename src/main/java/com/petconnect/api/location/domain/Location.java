@@ -33,9 +33,17 @@ public class Location {
     private Instant reportedAt;
     private Double latitude;
     private Double longitude;
+    /** Raio de incerteza informado pelo navegador de quem relatou, em metros. */
+    private Double accuracyMeters;
+    /** De onde veio a coordenada; {@code null} nos registros anteriores à fase 3 (#37). */
+    private PositionSource positionSource;
     private String description;
     private String reporterContact;
     private LocationSource source = LocationSource.PUBLIC_QR;
+
+    /** Id gerado pela página para cada envio: repetir o envio não duplica o relato. */
+    @Indexed(unique = true, sparse = true)
+    private String clientRequestId;
 
     private boolean legacyImport;
     private List<String> migrationWarnings = new ArrayList<>();
@@ -103,6 +111,30 @@ public class Location {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public Double getAccuracyMeters() {
+        return accuracyMeters;
+    }
+
+    public void setAccuracyMeters(Double accuracyMeters) {
+        this.accuracyMeters = accuracyMeters;
+    }
+
+    public PositionSource getPositionSource() {
+        return positionSource;
+    }
+
+    public void setPositionSource(PositionSource positionSource) {
+        this.positionSource = positionSource;
+    }
+
+    public String getClientRequestId() {
+        return clientRequestId;
+    }
+
+    public void setClientRequestId(String clientRequestId) {
+        this.clientRequestId = clientRequestId;
     }
 
     public String getDescription() {

@@ -153,7 +153,8 @@ public class PublicSharingService {
         return PublicSharing.forFirestorePet(firestoreId, me.firebaseUid(), legacyPublicId(firestoreId));
     }
 
-    private FirestorePet ownedFirestorePet(AuthenticatedUser me, String firestoreId) {
+    /** Pet do Firestore deste tutor, lido na hora. Outro dono ou pet inexistente: 404. */
+    public FirestorePet ownedFirestorePet(AuthenticatedUser me, String firestoreId) {
         FirestorePet pet;
         try {
             pet = firestore.find(firestoreId).orElse(null);
@@ -168,7 +169,8 @@ public class PublicSharingService {
         return pet;
     }
 
-    private Pet ownedApiPet(AuthenticatedUser me, String petId) {
+    /** Pet do MongoDB deste tutor. Outro dono, excluído ou inexistente: 404. */
+    public Pet ownedApiPet(AuthenticatedUser me, String petId) {
         Pet pet = pets.findById(petId).orElse(null);
         if (pet == null || pet.getDeletedAt() != null || !me.userId().equals(pet.getTutorId())) {
             throw petNotFound();
@@ -188,6 +190,11 @@ public class PublicSharingService {
 
     /** Pet que um {@code publicId} resolve, para a página e para o relato de avistamento. */
     public record ResolvedPet(String apiPetId, String firestoreId) {
+
+        /** Mesma chave de {@link PublicSharing#getPetKey()}. */
+        public String petKey() {
+            return firestoreId != null ? PublicSharing.firestoreKey(firestoreId) : PublicSharing.apiKey(apiPetId);
+        }
     }
 
     public PublicPetView publicView(String publicId) {

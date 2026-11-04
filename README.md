@@ -66,6 +66,33 @@ aceita um texto de consentimento versionado (`PublicSharingService.CONSENT_VERSI
 - **Exclusão:** excluir o pet ou a conta apaga a configuração, com o telefone
   e o nome de exibição.
 
+## Acessos e avistamentos do QR
+
+Fase 3 do épico (issue #37 do app). Dois eventos que nunca se confundem:
+
+| Evento | Rota | O que grava |
+|---|---|---|
+| `qr_page_opened` | `POST /api/v1/public/pets/{publicId}/events` com `{"type":"qr_page_opened"}` (público, `202` sem corpo) | Só o pet e a hora, em `qr_access_events`. Sem IP, user-agent ou coordenada |
+| `sighting_location_shared` | `POST /api/v1/public/pets/{publicId}/sightings` (público, `201` sem corpo) | Coordenada com `accuracyMeters` e `positionSource`, ou só o texto, em `locations` |
+
+O tutor lê os dois, separados, em `GET /api/v1/legacy-pets/{firestoreId}/qr-activity`
+ou `GET /api/v1/pets/{id}/qr-activity` (token; outro tutor recebe `404`).
+
+- **Relato:**
+  - precisa de uma coordenada ou de um texto (senão `400`);
+  - latitude e longitude vão juntas, e a precisão fica entre 0 e 100 km;
+  - `positionSource` é decidido pelo servidor: `BROWSER_GEOLOCATION` quando há
+    coordenada, `NONE` quando não há. Nenhum dos dois é verificado;
+  - `clientRequestId` (gerado pela página) evita relato duplicado;
+  - no máximo 20 relatos por pet por hora (`429`), além do limite por IP.
+- **Acessos:**
+  - no máximo 30 gravados por pet por hora; acima disso a página segue
+    normal e o acesso não é gravado;
+  - apagados sozinhos 90 dias depois (índice TTL em `expiresAt`) e ao excluir
+    o pet pela API.
+- **Avistamentos:** não são apagados automaticamente. A política de retenção
+  depende de revisão jurídica (issue #28 do app).
+
 ## Rodar em desenvolvimento
 
 Pré-requisitos: Docker. (JDK 21 + Maven só para rodar os testes fora do container.)
