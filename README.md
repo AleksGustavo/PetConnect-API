@@ -106,9 +106,9 @@ com a mesma credencial de `FIREBASE_SERVICE_ACCOUNT`.
 | `GET/PUT /api/v1/pets/{id}/notification-preferences` | tutor (token) | O mesmo para um pet da API |
 
 - **Quando avisa:**
-  - **acesso** (`qr_page_opened`): "O QR Code de [pet] foi acessado", no
-    máximo um a cada 15 minutos por pet. O texto diz que isso não confirma
-    que o pet foi visto;
+  - **acesso** (`qr_page_opened`): "O QR Code de [pet] foi acessado", a
+    cada abertura da página, até o limite de 30 acessos gravados por pet
+    por hora. O texto diz que isso não confirma que o pet foi visto;
   - **avistamento**: "Novo avistamento de [pet]", a cada relato novo (o
     mesmo `clientRequestId` não avisa de novo).
 - **Sem bloquear a página:** o envio roda numa thread virtual, fora da

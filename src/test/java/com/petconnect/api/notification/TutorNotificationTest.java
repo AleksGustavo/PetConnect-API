@@ -208,15 +208,25 @@ class TutorNotificationTest {
     }
 
     @Test
-    void acessosSeguidosViramUmAvisoSo() throws Exception {
+    void cadaAcessoAvisaOTutor() throws Exception {
         registrar("tok-a", TOKEN_A);
 
         abrirPagina();
         abrirPagina();
         abrirPagina();
 
-        verify(sender, times(1)).send(anyString(), any());
+        verify(sender, times(3)).send(anyString(), any());
         assertThat(accesses.count()).isEqualTo(3);
+    }
+
+    @Test
+    void acessoSemAparelhoNaoImpedeOAvisoDoProximo() throws Exception {
+        abrirPagina();
+        registrar("tok-a", TOKEN_A);
+
+        abrirPagina();
+
+        verify(sender, times(1)).send(anyString(), any());
     }
 
     @Test
