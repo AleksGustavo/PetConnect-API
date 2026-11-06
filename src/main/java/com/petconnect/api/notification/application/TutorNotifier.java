@@ -36,8 +36,10 @@ import java.util.Map;
  * depende do FCM, da rede e das configurações do aparelho.
  *
  * <ul>
- *   <li><b>Acesso</b>: no máximo um aviso por pet a cada {@link #ACCESS_QUIET_PERIOD};
- *       o texto diz que a página foi acessada, nunca que o pet foi visto.</li>
+ *   <li><b>Acesso</b>: avisa a cada abertura da página (pedido do proprietário de
+ *       2026-11-05; antes, no máximo um aviso a cada 15 minutos). O limite de acessos
+ *       gravados por pet ({@code QrActivityService}) freia spam. O texto diz que a
+ *       página foi acessada, nunca que o pet foi visto.</li>
  *   <li><b>Avistamento</b>: sempre avisa; o limite de relatos por pet já freia spam.</li>
  * </ul>
  *
@@ -49,7 +51,6 @@ public class TutorNotifier {
 
     private static final Logger log = LoggerFactory.getLogger(TutorNotifier.class);
 
-    static final Duration ACCESS_QUIET_PERIOD = Duration.ofMinutes(15);
     static final int MAX_ATTEMPTS = 2;
     private static final Duration RETRY_DELAY = Duration.ofMillis(500);
 
@@ -106,11 +107,6 @@ public class TutorNotifier {
             return;
         }
         Instant now = Instant.now();
-        if (type == Type.QR_ACCESS && notifications.existsByPetKeyAndTypeAndCreatedAtAfter(
-                pet.petKey(), Type.QR_ACCESS, now.minus(ACCESS_QUIET_PERIOD))) {
-            return;
-        }
-
         TutorNotification record = notifications.save(TutorNotification.pending(pet.petKey(), owner.uid(), type, now));
         List<PushDevice> targets = devices.findByOwnerUid(owner.uid());
         if (targets.isEmpty()) {
