@@ -5,6 +5,7 @@ import com.petconnect.api.sharing.domain.PublicField;
 import com.petconnect.api.sharing.domain.PublicSharing;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -18,6 +19,7 @@ public record PublicSharingResponse(
         Set<PublicField> fields,
         String tutorDisplayName,
         String contactPhone,
+        List<String> galleryPhotoIds,
         Instant consentAcceptedAt,
         String consentVersion,
         Instant consentRevokedAt,
@@ -32,6 +34,7 @@ public record PublicSharingResponse(
                 s.getFields(),
                 s.getTutorDisplayName(),
                 s.getContactPhoneE164(),
+                s.getGalleryPhotoIds(),
                 s.getConsentAcceptedAt(),
                 s.getConsentVersion(),
                 s.getConsentRevokedAt(),

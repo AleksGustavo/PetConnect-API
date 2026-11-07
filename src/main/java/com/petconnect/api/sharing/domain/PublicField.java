@@ -10,6 +10,11 @@ public enum PublicField {
     BREED,
     COLOR,
     PROFILE_PHOTO,
+    /**
+     * Mais duas fotos da galeria do pet, depois da de perfil (fase 2, issue
+     * #103 do app). Exige {@link #PROFILE_PHOTO}.
+     */
+    GALLERY_PHOTOS,
     TUTOR_NAME,
     CONTACT_PHONE
 }

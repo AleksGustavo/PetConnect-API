@@ -5,6 +5,7 @@ import com.petconnect.api.sharing.domain.PublicField;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -16,13 +17,15 @@ public record PublicSharingRequest(
         @NotNull Boolean enabled,
         Boolean consentAccepted,
         @Size(max = 20) String consentVersion,
-        @Size(max = 7) Set<PublicField> fields,
+        @Size(max = 8) Set<PublicField> fields,
         @Size(max = 200) String tutorDisplayName,
-        @Size(max = 30) String contactPhone
+        @Size(max = 30) String contactPhone,
+        /** Com {@code GALLERY_PHOTOS}: os ids das duas fotos da galeria, na ordem do carrossel. */
+        @Size(max = 2) List<@Size(max = 128) String> galleryPhotoIds
 ) {
 
     SharingChange toChange() {
         return new SharingChange(enabled, Boolean.TRUE.equals(consentAccepted), consentVersion, fields,
-                tutorDisplayName, contactPhone);
+                tutorDisplayName, contactPhone, galleryPhotoIds);
     }
 }

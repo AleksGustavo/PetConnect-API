@@ -1,5 +1,6 @@
 package com.petconnect.api.sharing.application;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -19,9 +20,22 @@ public interface FirestorePets {
      */
     Optional<FirestorePet> find(String firestoreId);
 
+    /**
+     * Fotos da galeria do pet ({@code Pets/{id}/fotos/{fotoId}}) com estes
+     * ids, na mesma ordem. Fica de fora a foto que não existe, que foi
+     * gravada para outro pet ou que não tem URL do Cloudinary.
+     *
+     * @throws Unavailable se o Firestore não respondeu ou a credencial não tem acesso
+     */
+    List<GalleryPhoto> galleryPhotos(String firestoreId, List<String> photoIds);
+
     /** Dados de {@code Pets/{id}} que a API usa. Nada clínico. */
     record FirestorePet(String ownerUid, String name, String species, String breed, String color,
                         String photoUrl, boolean deceased) {
+    }
+
+    /** Uma foto da galeria: o id do documento, o tutor que publicou e a URL do arquivo. */
+    record GalleryPhoto(String id, String ownerUid, String url) {
     }
 
     class Unavailable extends RuntimeException {

@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -90,7 +91,7 @@ class PublicPetControllerTest {
     @Test
     void comConsentimentoMostraSoOsCamposMarcadosDoPetDaApi() throws Exception {
         PublicSharing s = PublicSharing.forApiPet(activePetId, "uid-a");
-        s.publish(EnumSet.of(PublicField.PET_NAME, PublicField.SPECIES), null, null,
+        s.publish(EnumSet.of(PublicField.PET_NAME, PublicField.SPECIES), null, null, List.of(),
                 PublicSharingService.CONSENT_VERSION, "uid-a", Instant.now());
         sharings.save(s);
 
