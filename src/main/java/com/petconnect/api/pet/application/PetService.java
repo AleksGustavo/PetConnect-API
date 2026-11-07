@@ -3,15 +3,12 @@ package com.petconnect.api.pet.application;
 import com.petconnect.api.appointment.infrastructure.AppointmentRepository;
 import com.petconnect.api.location.infrastructure.LocationRepository;
 import com.petconnect.api.medicalrecord.infrastructure.MedicalRecordRepository;
-import com.petconnect.api.notification.infrastructure.PetNotificationPreferencesRepository;
 import com.petconnect.api.pet.domain.Pet;
 import com.petconnect.api.pet.infrastructure.PetRepository;
 import com.petconnect.api.pet.web.CreatePetRequest;
 import com.petconnect.api.pet.web.UpdatePetRequest;
-import com.petconnect.api.qractivity.infrastructure.QrAccessEventRepository;
+import com.petconnect.api.privacy.application.PetQrDataEraser;
 import com.petconnect.api.shared.error.ApiException;
-import com.petconnect.api.sharing.domain.PublicSharing;
-import com.petconnect.api.sharing.infrastructure.PublicSharingRepository;
 import com.petconnect.api.vaccine.infrastructure.VaccineRepository;
 import org.springframework.stereotype.Service;
 
@@ -30,22 +27,17 @@ public class PetService {
     private final VaccineRepository vaccines;
     private final AppointmentRepository appointments;
     private final MedicalRecordRepository medicalRecords;
-    private final PublicSharingRepository sharings;
-    private final QrAccessEventRepository qrAccesses;
-    private final PetNotificationPreferencesRepository notificationPreferences;
+    private final PetQrDataEraser qrData;
 
     public PetService(PetRepository pets, LocationRepository locations, VaccineRepository vaccines,
                       AppointmentRepository appointments, MedicalRecordRepository medicalRecords,
-                      PublicSharingRepository sharings, QrAccessEventRepository qrAccesses,
-                      PetNotificationPreferencesRepository notificationPreferences) {
+                      PetQrDataEraser qrData) {
         this.pets = pets;
         this.locations = locations;
         this.vaccines = vaccines;
         this.appointments = appointments;
         this.medicalRecords = medicalRecords;
-        this.sharings = sharings;
-        this.qrAccesses = qrAccesses;
-        this.notificationPreferences = notificationPreferences;
+        this.qrData = qrData;
     }
 
     public List<Pet> list(String tutorId) {
@@ -103,14 +95,11 @@ public class PetService {
         vaccines.deleteByPetId(p.getId());
         appointments.deleteByPetId(p.getId());
         medicalRecords.deleteByPetId(p.getId());
-        // A configuração da página pública guarda telefone e nome de exibição.
-        sharings.deleteByPetKey(PublicSharing.apiKey(p.getId()));
-        qrAccesses.deleteByPetKey(PublicSharing.apiKey(p.getId()));
-        notificationPreferences.deleteByPetKey(PublicSharing.apiKey(p.getId()));
+        // Página pública (telefone e nome de exibição), acessos, relatos,
+        // preferências e avisos, pelas duas chaves que o pet pode ter.
+        qrData.eraseApiPet(p.getId());
         if (p.getLegacyFirestoreId() != null) {
-            sharings.deleteByPetKey(PublicSharing.firestoreKey(p.getLegacyFirestoreId()));
-            qrAccesses.deleteByPetKey(PublicSharing.firestoreKey(p.getLegacyFirestoreId()));
-            notificationPreferences.deleteByPetKey(PublicSharing.firestoreKey(p.getLegacyFirestoreId()));
+            qrData.eraseFirestorePet(p.getLegacyFirestoreId());
         }
         pets.delete(p);
     }

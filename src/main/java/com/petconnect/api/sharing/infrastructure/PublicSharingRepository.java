@@ -3,6 +3,7 @@ package com.petconnect.api.sharing.infrastructure;
 import com.petconnect.api.sharing.domain.PublicSharing;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PublicSharingRepository extends MongoRepository<PublicSharing, String> {
@@ -11,7 +12,9 @@ public interface PublicSharingRepository extends MongoRepository<PublicSharing, 
 
     Optional<PublicSharing> findByPublicId(String publicId);
 
-    void deleteByPetKey(String petKey);
+    List<PublicSharing> findByOwnerUid(String ownerUid);
+
+    long deleteByPetKey(String petKey);
 
     long deleteByOwnerUid(String ownerUid);
 }

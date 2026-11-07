@@ -2,16 +2,20 @@ package com.petconnect.api.user.application;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
+import com.petconnect.api.notification.domain.PetNotificationPreferences;
+import com.petconnect.api.notification.domain.TutorNotification;
 import com.petconnect.api.notification.infrastructure.PetNotificationPreferencesRepository;
 import com.petconnect.api.notification.infrastructure.PushDeviceRepository;
 import com.petconnect.api.notification.infrastructure.TutorNotificationRepository;
 import com.petconnect.api.pet.application.PetService;
 import com.petconnect.api.pet.domain.Pet;
+import com.petconnect.api.privacy.application.PetQrDataEraser;
 import com.petconnect.api.shared.error.ApiException;
 import com.petconnect.api.shared.security.AuthenticatedUser;
 import com.petconnect.api.shared.security.AuthenticatedUserResolver;
 import com.petconnect.api.shared.security.TokenVerificationException;
 import com.petconnect.api.shared.security.VerifiedToken;
+import com.petconnect.api.sharing.domain.PublicSharing;
 import com.petconnect.api.sharing.infrastructure.PublicSharingRepository;
 import com.petconnect.api.user.domain.User;
 import com.petconnect.api.user.infrastructure.UserRepository;
@@ -23,6 +27,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Stream;
 
 @Service
 public class UserService implements AuthenticatedUserResolver {
@@ -35,17 +43,20 @@ public class UserService implements AuthenticatedUserResolver {
     private final PushDeviceRepository pushDevices;
     private final PetNotificationPreferencesRepository notificationPreferences;
     private final TutorNotificationRepository notifications;
+    private final PetQrDataEraser qrData;
     private final ObjectProvider<FirebaseAuth> firebaseAuth;
 
     public UserService(UserRepository users, PetService petService, PublicSharingRepository sharings,
                        PushDeviceRepository pushDevices, PetNotificationPreferencesRepository notificationPreferences,
-                       TutorNotificationRepository notifications, ObjectProvider<FirebaseAuth> firebaseAuth) {
+                       TutorNotificationRepository notifications, PetQrDataEraser qrData,
+                       ObjectProvider<FirebaseAuth> firebaseAuth) {
         this.users = users;
         this.petService = petService;
         this.sharings = sharings;
         this.pushDevices = pushDevices;
         this.notificationPreferences = notificationPreferences;
         this.notifications = notifications;
+        this.qrData = qrData;
         this.firebaseAuth = firebaseAuth;
     }
 
@@ -116,7 +127,13 @@ public class UserService implements AuthenticatedUserResolver {
         for (Pet p : ownedPets) {
             petService.delete(user.getId(), p.getId());
         }
-        // Páginas públicas de pets do Firestore que ainda não estavam em `pets`.
+        // Pets do Firestore que ainda não estavam em `pets`: a API só os
+        // conhece pelas chaves gravadas com o dono (página pública,
+        // preferências, avisos). Por elas saem também os acessos e os relatos,
+        // que não guardam o dono.
+        for (String petKey : petKeysOwnedBy(firebaseUid)) {
+            qrData.erasePetKey(petKey);
+        }
         sharings.deleteByOwnerUid(firebaseUid);
         pushDevices.deleteByOwnerUid(firebaseUid);
         notificationPreferences.deleteByOwnerUid(firebaseUid);
@@ -139,5 +156,18 @@ public class UserService implements AuthenticatedUserResolver {
         }
 
         log.info("Conta excluída: user {} ({} pets em cascata).", user.getId(), ownedPets.size());
+    }
+
+    private Set<String> petKeysOwnedBy(String firebaseUid) {
+        Set<String> keys = new TreeSet<>();
+        Stream.of(
+                        sharings.findByOwnerUid(firebaseUid).stream().map(PublicSharing::getPetKey),
+                        notificationPreferences.findByOwnerUid(firebaseUid).stream()
+                                .map(PetNotificationPreferences::getPetKey),
+                        notifications.findByOwnerUid(firebaseUid).stream().map(TutorNotification::getPetKey))
+                .flatMap(s -> s)
+                .filter(Objects::nonNull)
+                .forEach(keys::add);
+        return keys;
     }
 }
