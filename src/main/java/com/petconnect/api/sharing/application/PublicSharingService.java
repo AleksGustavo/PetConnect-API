@@ -3,6 +3,7 @@ package com.petconnect.api.sharing.application;
 import com.petconnect.api.pet.domain.Pet;
 import com.petconnect.api.pet.domain.PetStatus;
 import com.petconnect.api.pet.infrastructure.PetRepository;
+import com.petconnect.api.privacy.application.PetQrDataEraser;
 import com.petconnect.api.shared.error.ApiException;
 import com.petconnect.api.shared.security.AuthenticatedUser;
 import com.petconnect.api.sharing.application.FirestorePets.FirestorePet;
@@ -52,13 +53,15 @@ public class PublicSharingService {
     private final ConsentEventRepository events;
     private final PetRepository pets;
     private final FirestorePets firestore;
+    private final PetQrDataEraser qrData;
 
     public PublicSharingService(PublicSharingRepository sharings, ConsentEventRepository events,
-                                PetRepository pets, FirestorePets firestore) {
+                                PetRepository pets, FirestorePets firestore, PetQrDataEraser qrData) {
         this.sharings = sharings;
         this.events = events;
         this.pets = pets;
         this.firestore = firestore;
+        this.qrData = qrData;
     }
 
     // ---------------------------------------------------------- tutor
@@ -222,7 +225,7 @@ public class PublicSharingService {
             throw ApiException.unavailable("Não foi possível carregar as informações agora.");
         }
         if (live == null) {
-            forgetDeletedPet(s);
+            forgetDeletedPet(r.firestoreId());
             throw petNotFound();
         }
         if (live.deceased()) {
@@ -241,7 +244,7 @@ public class PublicSharingService {
             try {
                 FirestorePet live = firestore.find(r.firestoreId()).orElse(null);
                 if (live == null) {
-                    forgetDeletedPet(r.sharing());
+                    forgetDeletedPet(r.firestoreId());
                     throw petNotFound();
                 }
                 if (live.deceased()) {
@@ -261,14 +264,18 @@ public class PublicSharingService {
     }
 
     /**
-     * O tutor excluiu o pet no app (Firestore) e a configuração ficou aqui,
-     * com telefone e nome de exibição. Apaga no primeiro acesso ao QR; a
-     * exclusão da conta também apaga ({@code UserService.deleteAccount}).
+     * O tutor excluiu o pet no app (Firestore) e algo ficou aqui: o app pede
+     * a limpeza antes de excluir ({@code DELETE /legacy-pets/{id}/qr-data}),
+     * mas a API pode estar fora nessa hora. Apaga no primeiro acesso ao QR a
+     * configuração (telefone e nome de exibição), os acessos, os relatos, as
+     * preferências e os avisos do pet. A exclusão da conta também apaga
+     * ({@code UserService.deleteAccount}).
      */
-    private void forgetDeletedPet(PublicSharing s) {
-        if (s != null) {
-            sharings.delete(s);
-            log.info("Configuração da página pública apagada: pet excluído no Firestore ({}).", s.getPetKey());
+    private void forgetDeletedPet(String firestoreId) {
+        PetQrDataEraser.Erased erased = qrData.eraseFirestorePet(firestoreId);
+        if (erased.total() > 0) {
+            log.info("Dados do QR apagados: pet excluído no Firestore ({}, {} documento(s)).",
+                    PublicSharing.firestoreKey(firestoreId), erased.total());
         }
     }
 

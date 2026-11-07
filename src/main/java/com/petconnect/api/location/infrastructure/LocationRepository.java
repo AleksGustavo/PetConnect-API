@@ -15,6 +15,10 @@ public interface LocationRepository extends MongoRepository<Location, String> {
 
     void deleteByPetIdIn(Collection<String> petIds);
 
+    long deleteByPetId(String petId);
+
+    long deleteByLegacyPetId(String legacyPetId);
+
     List<Location> findByPetIdOrderByReportedAtDesc(String petId);
 
     List<Location> findByLegacyPetIdOrderByReportedAtDesc(String legacyPetId, Pageable page);

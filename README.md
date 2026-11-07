@@ -32,7 +32,8 @@ com.petconnect.api
 ├── appointment/         |  domain · application · infrastructure · web
 ├── medicalrecord/      /   (vazios na FASE 1)
 ├── location/          /
-└── sharing/           página pública do QR com consentimento (épico #102 do app)
+├── sharing/           página pública do QR com consentimento (épico #102 do app)
+└── privacy/           exclusão dos dados do QR de pets excluídos (LGPD)
 ```
 
 ## Página pública do QR com consentimento
@@ -64,7 +65,7 @@ aceita um texto de consentimento versionado (`PublicSharingService.CONSENT_VERSI
   - a página de um pet publicado responde `503`;
   - a página de um pet sem publicação continua com o mínimo neutro.
 - **Exclusão:** excluir o pet ou a conta apaga a configuração, com o telefone
-  e o nome de exibição.
+  e o nome de exibição. Ver [Exclusão dos dados do QR](#exclusão-dos-dados-do-qr-lgpd).
 
 ## Acessos e avistamentos do QR
 
@@ -89,9 +90,9 @@ ou `GET /api/v1/pets/{id}/qr-activity` (token; outro tutor recebe `404`).
   - no máximo 30 gravados por pet por hora; acima disso a página segue
     normal e o acesso não é gravado;
   - apagados sozinhos 90 dias depois (índice TTL em `expiresAt`) e ao excluir
-    o pet pela API.
-- **Avistamentos:** não são apagados automaticamente. A política de retenção
-  depende de revisão jurídica (issue #28 do app).
+    o pet ou a conta.
+- **Avistamentos:** não expiram sozinhos; saem ao excluir o pet ou a conta. A
+  política de retenção depende de revisão jurídica (issue #28 do app).
 
 ## Avisos ao tutor (push)
 
@@ -124,12 +125,44 @@ com a mesma credencial de `FIREBASE_SERVICE_ACCOUNT`.
   `pet_notification_preferences` (uma por pet; sem documento, os dois avisos
   ficam ligados) e `tutor_notifications`.
 - **Exclusão:** excluir a conta apaga aparelhos, preferências e histórico de
-  avisos; excluir o pet apaga as preferências dele.
+  avisos; excluir o pet apaga as preferências e o histórico de avisos dele.
 - **Credencial:** a conta de serviço precisa poder enviar mensagens pelo FCM.
   A chave `firebase-adminsdk` do projeto já pode; uma conta dedicada precisa do
   papel **Firebase Cloud Messaging API Admin** (`roles/firebasecloudmessaging.admin`),
   e a API "Firebase Cloud Messaging API (V1)" precisa estar ativada no
   projeto do Google Cloud.
+
+## Exclusão dos dados do QR (LGPD)
+
+Com o app em modo Firestore, quem apaga o pet é o app, direto no Firestore.
+A API guarda do pet, pela chave `fs:<id do Firestore>`: a página pública
+(`pet_public_sharing`), os acessos (`qr_access_events`), os relatos com
+coordenada e contato de quem achou (`locations`, por `legacyPetId`), as
+preferências de aviso (`pet_notification_preferences`) e o histórico de
+avisos (`tutor_notifications`). `PetQrDataEraser` apaga tudo isso de um pet
+e é usado por todos os caminhos abaixo.
+
+| Caminho | Quem | O que apaga |
+|---|---|---|
+| `DELETE /api/v1/legacy-pets/{firestoreId}/qr-data` | tutor (token), `204` | O app chama antes de apagar o pet no Firestore. Apaga os dados acima e, se a migração levou o pet ao MongoDB e ele é do mesmo tutor, a cópia em `pets` com vacinas, consultas, histórico e localizações (`PetService.delete`). Idempotente |
+| `DELETE /api/v1/pets/{id}` | tutor (token) | Pet da API: cascata, pelas chaves `api:<id>` e, se migrado, `fs:<id do Firestore>` |
+| `DELETE /api/v1/me` | tutor (token) | Pets da API em cascata; para os pets do Firestore, os dados do QR de cada chave gravada com o dono (página, preferências, avisos), o que inclui acessos e relatos; aparelhos do push |
+| Acesso ao QR de pet que não existe mais no Firestore | público | A página responde `404` e apaga os dados do QR do pet. Cobre a exclusão feita com a API fora do ar |
+
+- **Quem pode** usar a rota `qr-data`:
+  - pet ainda no Firestore: só o dono, conferido lá na hora; outro tutor
+    recebe `404`, igual a pet inexistente;
+  - pet já excluído do Firestore (nova tentativa do app): apaga se nada aqui
+    aponta outro dono (página, preferências, cópia migrada); se aponta,
+    `404`;
+  - Firestore fora do ar: `503`, nada é apagado.
+- **Fica de propósito:** o histórico de consentimento
+  (`public_sharing_consent_events`), sem telefone nem nome, como prova do
+  consentimento. O prazo de guarda ainda não foi definido.
+- **Ainda fica:** a exclusão de conta faz *soft delete* em `users` e mantém
+  nome e e-mail. Um aviso em andamento na hora da exclusão pode gravar um
+  registro em `tutor_notifications`, que sai pelo TTL.
+- **Log:** só a chave do pet e quantos documentos saíram. Nada do conteúdo.
 
 ## Rodar em desenvolvimento
 
