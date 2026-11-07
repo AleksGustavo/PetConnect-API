@@ -49,7 +49,18 @@ aceita um texto de consentimento versionado (`PublicSharingService.CONSENT_VERSI
 | `POST /api/v1/public/pets/{publicId}/sightings` | público | Relato anônimo; responde `201` sem corpo |
 
 - **Campos publicáveis** (`PublicField`): `PET_NAME`, `SPECIES`, `BREED`, `COLOR`,
-  `PROFILE_PHOTO`, `TUTOR_NAME`, `CONTACT_PHONE` (E.164, ver `ContactPhone`).
+  `PROFILE_PHOTO`, `GALLERY_PHOTOS`, `TUTOR_NAME`, `CONTACT_PHONE` (E.164, ver
+  `ContactPhone`).
+- **Fotos da galeria** (fase 2, issue #103 do app): com `GALLERY_PHOTOS`, o `PUT`
+  leva `galleryPhotoIds` com dois ids de `Pets/{id}/fotos`.
+  - **Validação:** a API exige `PROFILE_PHOTO` marcado e o pet com foto de
+    perfil. Confere no Firestore que as duas fotos existem, são daquele pet,
+    foram publicadas pelo dono e têm URL do Cloudinary.
+  - **Só pets do Firestore:** para pet da API, responde `400`.
+  - **O que fica salvo:** só os ids. A resposta pública lê as fotos na hora e
+    devolve `photos: [perfil, foto 2, foto 3]` apenas com as três
+    disponíveis. Faltando uma, ou com o Firestore fora do ar, vai só
+    `photoUrl`.
 - **Coleções:**
   - `pet_public_sharing`: uma configuração por pet, fora de `pets`, para a
     migração não apagar o consentimento;

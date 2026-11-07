@@ -7,7 +7,9 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -52,6 +54,12 @@ public class PublicSharing {
     private Set<PublicField> fields = EnumSet.noneOf(PublicField.class);
     private String tutorDisplayName;
     private String contactPhoneE164;
+    /**
+     * Ids das duas fotos da galeria ({@code Pets/{id}/fotos/{fotoId}} no
+     * Firestore) escolhidas para a página, na ordem do carrossel. A URL não é
+     * copiada: a página lê a foto na galeria a cada acesso.
+     */
+    private List<String> galleryPhotoIds = new ArrayList<>();
 
     private Instant consentAcceptedAt;
     private String consentVersion;
@@ -102,18 +110,19 @@ public class PublicSharing {
     }
 
     public void publish(Set<PublicField> fields, String tutorDisplayName, String contactPhoneE164,
-                        String consentVersion, String actorUid, Instant now) {
+                        List<String> galleryPhotoIds, String consentVersion, String actorUid, Instant now) {
         this.enabled = true;
         this.fields = fields.isEmpty() ? EnumSet.noneOf(PublicField.class) : EnumSet.copyOf(fields);
         this.tutorDisplayName = tutorDisplayName;
         this.contactPhoneE164 = contactPhoneE164;
+        this.galleryPhotoIds = new ArrayList<>(galleryPhotoIds);
         this.consentAcceptedAt = now;
         this.consentVersion = consentVersion;
         this.consentAcceptedBy = actorUid;
         this.consentRevokedAt = null;
     }
 
-    /** Desativa e apaga o que só existia para a página (nome de exibição e telefone). */
+    /** Desativa e apaga o que só existia para a página (nome de exibição, telefone e fotos escolhidas). */
     public void revoke(Instant now) {
         if (consentAcceptedAt != null && consentRevokedAt == null) {
             this.consentRevokedAt = now;
@@ -122,6 +131,7 @@ public class PublicSharing {
         this.fields = EnumSet.noneOf(PublicField.class);
         this.tutorDisplayName = null;
         this.contactPhoneE164 = null;
+        this.galleryPhotoIds = new ArrayList<>();
     }
 
     public String getId() {
@@ -166,6 +176,11 @@ public class PublicSharing {
 
     public String getContactPhoneE164() {
         return contactPhoneE164;
+    }
+
+    /** Vazia em configurações salvas antes da fase 2. */
+    public List<String> getGalleryPhotoIds() {
+        return galleryPhotoIds == null ? List.of() : List.copyOf(galleryPhotoIds);
     }
 
     public Instant getConsentAcceptedAt() {

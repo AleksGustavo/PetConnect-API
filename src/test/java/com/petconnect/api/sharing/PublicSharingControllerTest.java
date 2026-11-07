@@ -9,6 +9,7 @@ import com.petconnect.api.shared.security.VerifiedToken;
 import com.petconnect.api.shared.web.RateLimiter;
 import com.petconnect.api.sharing.application.FirestorePets;
 import com.petconnect.api.sharing.application.FirestorePets.FirestorePet;
+import com.petconnect.api.sharing.application.FirestorePets.GalleryPhoto;
 import com.petconnect.api.sharing.domain.ConsentEvent;
 import com.petconnect.api.sharing.domain.PublicField;
 import com.petconnect.api.sharing.domain.PublicSharing;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -303,7 +305,8 @@ class PublicSharingControllerTest {
     @Test
     void publicacaoEmVersaoAntigaDoTextoNaoValeMais() throws Exception {
         PublicSharing antiga = PublicSharing.forFirestorePet(REX, "uid-a", publicIdDe(REX));
-        antiga.publish(EnumSet.of(PublicField.PET_NAME), null, null, "2020-01-01", "uid-a", Instant.now());
+        antiga.publish(EnumSet.of(PublicField.PET_NAME), null, null, List.of(), "2020-01-01", "uid-a",
+                Instant.now());
         sharings.save(antiga);
 
         paginaPublica(publicIdDe(REX)).andExpect(content().json("{\"shared\":false}", true));
@@ -348,5 +351,93 @@ class PublicSharingControllerTest {
                 .andExpect(jsonPath("$.email").doesNotExist())
                 .andExpect(jsonPath("$.status").doesNotExist())
                 .andExpect(jsonPath("$.firestoreId").doesNotExist());
+    }
+
+    // ------------------------------------------------- fase 2: fotos da galeria (issue #103 do app)
+
+    private static final String FOTO_2 = "https://res.cloudinary.com/qgrx3f8s/image/upload/v1/rex-2.jpg";
+    private static final String FOTO_3 = "https://res.cloudinary.com/qgrx3f8s/image/upload/v1/rex-3.jpg";
+    private static final String COM_GALERIA = "\"PET_NAME\",\"PROFILE_PHOTO\",\"GALLERY_PHOTOS\"";
+    private static final String IDS = ",\"galleryPhotoIds\":[\"foto-2\",\"foto-3\"]";
+
+    private void galeriaDoRex(GalleryPhoto... fotos) {
+        when(firestore.galleryPhotos(eq(REX), anyList())).thenReturn(List.of(fotos));
+    }
+
+    @Test
+    void galeriaPublicaOCarrosselComAFotoDePerfilPrimeiro() throws Exception {
+        galeriaDoRex(new GalleryPhoto("foto-2", "uid-a", FOTO_2), new GalleryPhoto("foto-3", "uid-a", FOTO_3));
+
+        salvar("tok-a", REX, publicar(COM_GALERIA, IDS))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.galleryPhotoIds[0]").value("foto-2"))
+                .andExpect(jsonPath("$.galleryPhotoIds[1]").value("foto-3"));
+
+        paginaPublica(publicIdDe(REX))
+                .andExpect(content().json("{\"shared\":true,\"name\":\"Rex\",\"photoUrl\":\"" + FOTO + "\","
+                        + "\"photos\":[\"" + FOTO + "\",\"" + FOTO_2 + "\",\"" + FOTO_3 + "\"]}", true));
+    }
+
+    @Test
+    void galeriaExigeFotoDePerfilEDuasFotosDiferentesDoPet() throws Exception {
+        galeriaDoRex(new GalleryPhoto("foto-2", "uid-a", FOTO_2), new GalleryPhoto("foto-3", "uid-a", FOTO_3));
+
+        // Sem a foto de perfil marcada.
+        salvar("tok-a", REX, publicar("\"PET_NAME\",\"GALLERY_PHOTOS\"", IDS)).andExpect(status().isBadRequest());
+        // Uma foto só, a mesma foto duas vezes, id com caminho.
+        salvar("tok-a", REX, publicar(COM_GALERIA, ",\"galleryPhotoIds\":[\"foto-2\"]"))
+                .andExpect(status().isBadRequest());
+        salvar("tok-a", REX, publicar(COM_GALERIA, ",\"galleryPhotoIds\":[\"foto-2\",\"foto-2\"]"))
+                .andExpect(status().isBadRequest());
+        salvar("tok-a", REX, publicar(COM_GALERIA, ",\"galleryPhotoIds\":[\"foto-2\",\"../fotos/x\"]"))
+                .andExpect(status().isBadRequest());
+        // Pet sem foto de perfil.
+        salvar("tok-a", NOVO, publicar(COM_GALERIA, IDS)).andExpect(status().isBadRequest());
+
+        // Foto que não está na galeria do pet, ou que outro tutor publicou.
+        galeriaDoRex(new GalleryPhoto("foto-2", "uid-a", FOTO_2));
+        salvar("tok-a", REX, publicar(COM_GALERIA, IDS)).andExpect(status().isBadRequest());
+        galeriaDoRex(new GalleryPhoto("foto-2", "uid-a", FOTO_2), new GalleryPhoto("foto-3", "uid-b", FOTO_3));
+        salvar("tok-a", REX, publicar(COM_GALERIA, IDS)).andExpect(status().isBadRequest());
+
+        assertThat(sharings.findAll()).isEmpty();
+    }
+
+    @Test
+    void fotoQueSaiuDaGaleriaDesfazOCarrosselEFicaSoAFotoDePerfil() throws Exception {
+        galeriaDoRex(new GalleryPhoto("foto-2", "uid-a", FOTO_2), new GalleryPhoto("foto-3", "uid-a", FOTO_3));
+        salvar("tok-a", REX, publicar(COM_GALERIA, IDS)).andExpect(status().isOk());
+
+        galeriaDoRex(new GalleryPhoto("foto-2", "uid-a", FOTO_2));
+        paginaPublica(publicIdDe(REX))
+                .andExpect(content().json("{\"shared\":true,\"name\":\"Rex\",\"photoUrl\":\"" + FOTO + "\"}", true));
+
+        // Firestore fora do ar ao ler a galeria: a página abre, sem carrossel.
+        when(firestore.galleryPhotos(eq(REX), anyList())).thenThrow(new FirestorePets.Unavailable("teste", null));
+        paginaPublica(publicIdDe(REX))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.photos").doesNotExist());
+    }
+
+    @Test
+    void semGaleriaMarcadaNaoHaCarrosselERevogarApagaAsFotosEscolhidas() throws Exception {
+        galeriaDoRex(new GalleryPhoto("foto-2", "uid-a", FOTO_2), new GalleryPhoto("foto-3", "uid-a", FOTO_3));
+        salvar("tok-a", REX, publicar(COM_GALERIA, IDS)).andExpect(status().isOk());
+
+        // Desmarcar a galeria apaga os ids, mesmo que venham no corpo.
+        salvar("tok-a", REX, publicar("\"PET_NAME\",\"PROFILE_PHOTO\"", IDS))
+                .andExpect(jsonPath("$.galleryPhotoIds").isEmpty());
+        paginaPublica(publicIdDe(REX)).andExpect(jsonPath("$.photos").doesNotExist());
+
+        salvar("tok-a", REX, publicar(COM_GALERIA, IDS)).andExpect(status().isOk());
+        salvar("tok-a", REX, "{\"enabled\":false}").andExpect(status().isOk());
+        assertThat(sharings.findByPetKey("fs:" + REX).orElseThrow().getGalleryPhotoIds()).isEmpty();
+    }
+
+    @Test
+    void firestoreForaDoArAoConferirAsFotosResponde503() throws Exception {
+        when(firestore.galleryPhotos(eq(REX), anyList())).thenThrow(new FirestorePets.Unavailable("teste", null));
+        salvar("tok-a", REX, publicar(COM_GALERIA, IDS)).andExpect(status().isServiceUnavailable());
+        assertThat(sharings.findAll()).isEmpty();
     }
 }
