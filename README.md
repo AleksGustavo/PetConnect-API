@@ -185,6 +185,23 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev,local   # usa src/main/resour
 
 **Nenhum segredo é versionado.** Chaves ficam em env var / secret manager do host.
 
+### Produção no Render (plano gratuito)
+
+- **Dorme sem uso:** o serviço dorme depois de ~15 min sem tráfego. Em
+  2026-11-07, a primeira requisição depois disso levou 138 s.
+- **Ping agendado:** o workflow `.github/workflows/manter-acordada.yml` chama
+  `/actuator/health/liveness` a cada 5 minutos para manter o serviço
+  acordado. Roda também à mão, em Actions > "Manter a API acordada" > Run
+  workflow.
+- **Limite de horas:** ligado 24 h, o serviço usa ~744 h/mês das 750 h
+  gratuitas da conta do Render. Outro serviço gratuito na mesma conta passa
+  do limite.
+- **Workflow desligado:** o GitHub desliga workflows agendados depois de 60
+  dias sem atividade no repositório. Se acontecer, reative em Actions.
+- **Garantia:** o ping reduz o cold start, mas não garante resposta rápida
+  sempre, porque o GitHub pode atrasar execuções agendadas. Para eliminar o
+  problema, só um plano pago (issue #13).
+
 ## Formato de erro
 
 Toda resposta de erro:
