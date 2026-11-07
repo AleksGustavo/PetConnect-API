@@ -1,0 +1,44 @@
+name: Manter a API acordada
+
+# O plano gratuito do Render dorme o serviço depois de ~15 min sem
+# tráfego, e a primeira requisição seguinte levou 138 s em 2026-11-07. Isso
+# atrasa a página do QR, o login e o registro do celular para o push
+# (issue #13). Um ping a cada 5 minutos mantém o serviço acordado.
+#
+# - O GitHub pode atrasar ou pular execuções agendadas em horários de pico,
+#   por isso o intervalo fica bem abaixo dos 15 minutos.
+# - Repositório público: não gasta minutos do Actions.
+# - Ligado 24 h, o serviço usa ~744 h/mês das 750 h gratuitas da conta do
+#   Render. Outro serviço gratuito na mesma conta passaria do limite.
+# - O GitHub desliga workflows agendados depois de 60 dias sem atividade no
+#   repositório; reative em Actions se isso acontecer.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: manter-acordada
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping de liveness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Liveness só confirma que o processo está de pé: não consulta o
+      # MongoDB nem o Firebase. O tempo longo cobre um serviço que ainda
+      # está acordando.
+      - name: GET /actuator/health/liveness
+        env:
+          API_URL: https://petconnect-api-rxr9.onrender.com
+        run: >-
+          curl --fail --silent --show-error
+          --max-time 180 --retry 2 --retry-delay 15
+          --output /dev/null
+          --write-out "HTTP %{http_code} em %{time_total}s\n"
+          "$API_URL/actuator/health/liveness"
